@@ -35,8 +35,8 @@ namespace ReadD2cMessages
     /// </summary>
     public class GPSCls
     {
-        static string EventHubConnectionString = "Endpoint=sb://iothub-ns-azpicogpdh-25193662-4eabbe6e21.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=nYGHfSmqG5Th3aJBqM9iy4Jl2kDrlE1/TxpVS1vlr2o=;EntityPath=azpicogpdhub1";
-        static string HubName = "azpicogpdhub1";
+        static string EventHubConnectionString = "<Endpoint>";
+        static string HubName = "<Hub Name>";
         static bool showProperties = true;
         static Func<double[], int>? MyMethodName = null;
         static double lat = 0;
@@ -49,11 +49,6 @@ namespace ReadD2cMessages
             System.Diagnostics.Debug.WriteLine(".NET 6.0 C# 9.0.\n");
             Start = DateTime.Now.ToUniversalTime();
             System.Diagnostics.Debug.WriteLine("Do you want to SHOW System and App  Properties sent by IoT Hub? [Y]es Default No");
-            //var ch = System.Diagnostics.Debug.ReadKey();
-            //if ((ch.KeyChar == 'Y') || (ch.KeyChar == 'y'))
-            //{
-            //    showProperties = true;
-            //}
             System.Diagnostics.Debug.WriteLine("");
 
             // Set up a way for the user to gracefully shutdown
