@@ -1,0 +1,417 @@
+﻿@page "/map/overview"
+@page "/map/index"
+@page "/"
+
+<!--From: https://demos.telerik.com/blazor-ui/map/overview -->
+
+
+<style>
+    .custom-marker-class {
+        background-image: url(/images/sunny.png);
+        padding-top: 20px;
+        text-align: center;
+        background-size: 20px;
+        width: 20px;
+        background-repeat: no-repeat;
+        display: inline-table;
+        font-size: 12px;
+    }
+
+    .second-custom-marker-class {
+        background-image: url(https://demos.telerik.com/kendo-ui/content/dataviz/chart/images/rainy.png);
+        padding-top: 65px;
+        text-align: center;
+        background-size: 65px;
+        width: 63px;
+        background-repeat: no-repeat;
+        display: inline-table;
+        font-size: 12px;
+    }
+</style>
+
+
+@Center[0]&nbsp;&nbsp;
+@Center[1]<br/>
+@Centeralt[0]&nbsp;&nbsp;
+@Centeralt[1]
+<br />
+
+
+<button  @onclick="() => ToggleViz()">Viz</button><br/>
+
+
+@if (@viz)
+{
+    <EditForm Model=@inputs>
+        Number of GPS data points to average:&nbsp;
+        <InputNumber @bind-Value=inputs.numPoints  /><br/>
+        
+        <button  @onclick="() => GetPoint(1)">Set Actual Map Point 1</button> &nbsp;Latitude:&nbsp;<InputNumber @bind-Value=inputs.maplat1 /> 
+        &nbsp;Longitude:&nbsp;<InputNumber @bind-Value=inputs.maplon1 /><br/>
+        <button @onclick="() => GetPoint(3)">Get GPS Aver. Point 1</button>&nbsp;Lattitude:&nbsp;<InputNumber @bind-Value=inputs.gpslat1 /> &nbsp;Longitude:&nbsp;<InputNumber @bind-Value=inputs.gpslon1 />
+        <br/>
+        <button @onclick="() => GetPoint(2)">Set Actual Map Point 2</button> &nbsp;Latitude:&nbsp;<InputNumber @bind-Value=inputs.maplat2 />
+        &nbsp;Longitude:&nbsp;<InputNumber @bind-Value=inputs.maplon2 /><br />
+        <button @onclick="() => GetPoint(4)">Get GPS Aver. Point 2</button>&nbsp;Lattitude:&nbsp;<InputNumber @bind-Value=inputs.gpslat2 /> &nbsp;Longitude:&nbsp;<InputNumber @bind-Value=inputs.gpslon2 />
+        <br/>
+        <button  @onclick="() => Calibrate()">Calibrate</button><br/>
+        @GPSMap.Data.ScaleGPS.mGradient[0] &nbsp;@GPSMap.Data.ScaleGPS.mGradient[1]
+    </EditForm>
+}
+else{
+
+<button  @onclick="() => {zoom++;}">+</button><button @onclick="() => {zoom--;}">-</button><br/>
+
+<TelerikMap Center="@Center"
+            MinZoom="3"
+            OnClick="@OnMapZoom"
+            Zoom="@zoom">
+    <MapLayers>
+        <MapLayer Type="@MapLayersType.Tile"
+                  Attribution="@Attribution"
+                  Subdomains="@Subdomains"
+                  UrlTemplate="@UrlTemplate">
+        </MapLayer>
+
+        <MapLayer Type="@MapLayersType.Marker"
+                  Data="@MarkerData"
+                  LocationField="@nameof(MarkerModel.LatLng)"
+                  TitleField="@nameof(MarkerModel.Address)">
+            <MapLayerMarkerSettings>
+                <MapLayerMarkerSettingsTooltip>
+                    <Template>
+                        @{
+                            var dataItem = context.DataItem as MarkerModel;
+                        }
+
+                        <div>@dataItem?.Address</div>
+                    </Template>
+                </MapLayerMarkerSettingsTooltip>
+            </MapLayerMarkerSettings>
+        </MapLayer>
+                <MapLayer Type="@MapLayersType.Marker"
+                  Data="@MarkerData2"
+                  LocationField="@nameof(MarkerModel.LatLng)"
+                  TitleField="@nameof(MarkerModel.Address)">
+                  <MapLayerMarkerSettings Template="<span class='custom-marker-class'>#= dataItem.Title #</span>"/>              
+        </MapLayer>
+    </MapLayers>
+</TelerikMap>
+}
+
+
+
+
+
+
+@code {
+
+    void ToggleViz()
+    { 
+        viz = !viz; 
+    }
+
+    enum Mode {normal,calPoint1,calPoint2}
+    bool viz = false;
+    private const int lat = 0;
+    private const int lon = 1;
+    public class Inputs
+    {
+        public  int numPoints { get; set; } = 10;
+        public double maplat1 { get; set; }
+        public double maplon1 { get; set; }
+        public double maplat2 { get; set; }
+        public double maplon2 { get; set; }
+        public double gpslat1 { get; set; }
+        public double gpslon1 { get; set; }
+        public double gpslat2 { get; set; }
+        public double gpslon2 { get; set; }
+    }
+
+    Inputs inputs = new Inputs();
+
+    public string[] Subdomains { get; set; } = new string[] { "a", "b", "c" };
+    public string UrlTemplate { get; set; } = "https://#= subdomain #.tile.openstreetmap.org/#= zoom #/#= x #/#= y #.png";
+    public string Attribution { get; set; } = "&copy; <a href='https://osm.org/copyright'>OpenStreetMap contributors</a>";
+    public double[] Center { get; set; } = new double[] { 47.6062, -122.3321 };
+    public double[] Centeralt { get; set; } = new double[] { 0, 0 };
+
+
+    Mode mode = Mode.normal;
+    List<double[]> latlongs1 = new List<double[]>();
+    List<double[]>  latlongs2 = new List<double[]>();
+
+    void Calibrate()
+    {
+        GPSMap.Data.ScaleGPS.Calibrate();
+    }
+
+
+    void GetPoint (int n)
+    {
+        switch (n)
+        {
+            case 1:
+                mapPoint1[lat] = inputs.maplat1;
+                mapPoint1[lon] = inputs.maplon1;
+                GPSMap.Data.ScaleGPS.SetMap1(mapPoint1);
+                break;
+            case 2:
+                mapPoint2[lat] = inputs.maplat2;
+                mapPoint2[lon] = inputs.maplon2;
+                GPSMap.Data.ScaleGPS.SetMap2(mapPoint2);
+                break;
+            case 3:
+                latlongs1 = new List<double[]>();
+                mode = Mode.calPoint1;
+                break;
+            case 4:
+                latlongs2 = new List<double[]>();
+                mode = Mode.calPoint2;
+                break;
+            default:
+                mode = Mode.normal;
+                break;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (first)
+        {
+            ReadD2cMessages.GPSCls.Main(SetCoords).GetAwaiter();
+            await Delay(500);
+        }
+
+    }
+
+    async Task Delay(int del)
+    {
+        await Task.Delay(del);
+    }
+
+    protected override async Task  OnInitializedAsync()
+    {
+        inputs.maplat1 = mapPoint1[lat];
+        inputs.maplon1 = mapPoint1[lon];
+        inputs.maplat2 = mapPoint2[lat];
+        inputs.maplon2 = mapPoint2[lon];
+        GPSMap.Data.ScaleGPS.SetMap1(mapPoint1);
+        GPSMap.Data.ScaleGPS.SetMap1(mapPoint2);
+
+        inputs.gpslat1 = gpsPoint1[lat];
+        inputs.gpslon1 = gpsPoint1[lon];
+        inputs.gpslat2 = gpsPoint2[lat];
+        inputs.gpslon2 = gpsPoint2[lon];
+        GPSMap.Data.ScaleGPS.SetGPSDataPoin1(gpsPoint1);
+        GPSMap.Data.ScaleGPS.SetGPSDataPoin2(gpsPoint2);
+
+        GPSMap.Data.ScaleGPS.Calibrate();
+        mode = Mode.normal;
+        _zoom = 16;
+        await Delay(100);
+    }
+
+
+    private static double[] mapPoint1 = new double[] {-37.7466451,144.8954940};
+    private static double[] gpsPoint1 = new double[] {-37.4480251,144.5374179};
+
+    private static double[] mapPoint2 = new double[] {-37.7338654,144.9027669};
+    private static double[] gpsPoint2 = new double[] {-37.4403266,144.5416386};
+
+    public int _zoom = 16;
+    public int zoom
+    {
+        get
+        {
+            return _zoom;
+        }
+        set
+        {
+            if (value > 19)
+                _zoom = 19;
+            else if (value < 0)
+                _zoom = 0;
+            else
+                _zoom = value;
+
+        }
+    }
+
+    public List<MarkerModel> MarkerData2 { get; set; } = new List<MarkerModel>()
+    {
+        // Roving
+        new MarkerModel()
+        {
+            LatLng = new double[] { 42.4906, -71.2760 },
+            Address = "Center1, Center2",
+        },
+    };
+
+    public List<MarkerModel> MarkerData { get; set; } = new List<MarkerModel>()
+    {
+        // North America
+        new MarkerModel()
+        {
+            LatLng = new double[] { 42.4906, -71.2760 },
+            Address = "Bedford, MA",
+        },
+        new MarkerModel()
+        {
+            LatLng = new double[] { 47.6062, -122.3321 },
+            Address = "Seattle, WA",
+        },
+        new MarkerModel()
+        {
+            LatLng = new double[] { 43.0731, -89.4012 },
+            Address = "Madison, WI",
+        },
+        new MarkerModel()
+        {
+            LatLng = new double[] { 34.0754, -84.2941 },
+            Address = "Alpharetta, GA",
+        },
+
+        // South America
+        new MarkerModel()
+        {
+            LatLng = new double[] { -23.5558, -46.6396 },
+            Address = "Sao Paulo, Brazil",
+        },
+
+        // Europe
+        new MarkerModel()
+        {
+            LatLng = new double[] { 42.6977, 23.3219 },
+            Address = "Sofia, Bulgaria",
+        },
+        new MarkerModel()
+        {
+            LatLng = new double[] { 40.4319, -3.6649 },
+            Address = "Madrid, Spain",
+        },
+        new MarkerModel()
+        {
+            LatLng = new double[] { 52.6638, -8.6267 },
+            Address = "Limerick, Ireland",
+        },
+        new MarkerModel()
+        {
+            LatLng = new double[] { 45.4720, 9.1920 },
+            Address = "Milan, Italy",
+        },
+
+        // Asia
+        new MarkerModel()
+        {
+            LatLng = new double[] { 12.9662, 77.6068 },
+            Address = "Bangalore, India",
+        },
+        new MarkerModel()
+        {
+            LatLng = new double[] { 28.5347, 77.2602 },
+            Address = "New Delhi, India",
+        },
+        new MarkerModel()
+        {
+            LatLng = new double[] { 35.6500, 139.7307 },
+            Address = "Tokyo, Japan",
+        },
+        new MarkerModel()
+        {
+            LatLng = new double[] { 1.2833, 103.8496 },
+            Address = "Singapore, Singapore",
+        },
+
+        // Australia
+        new MarkerModel()
+        {
+            LatLng = new double[] { -37.8152, 144.9639 },
+            Address = "Melbourne, Australia",
+        },
+        new MarkerModel()
+        {
+            LatLng = new double[] { -37.8152, 144.9639 },
+            Address = "Point, World",
+        },
+    };
+
+    public class MarkerModel
+    {
+        public double[] LatLng { get; set; }
+        public string Address { get; set; }
+    }
+
+    int SetCoords(double[] coords)
+    {
+        double[] gpsData = coords;
+
+        switch (mode)
+        {
+            case Mode.normal:
+                Centeralt = gpsData;
+                Center = GPSMap.Data.ScaleGPS.FixGPS(gpsData);
+                MarkerData2[0].LatLng = Center;
+                MarkerData2[0].Address = $"{MarkerData2[0].LatLng[0]},{MarkerData2[0].LatLng[1]}";
+                StateHasChanged();
+                break;
+            case Mode.calPoint1:
+                latlongs1.Add(gpsData);
+                int count1 = latlongs1.Count();
+                double[] gpsPoint1 = new double[]{0,0};
+                if (count1>= inputs.numPoints)
+                {
+                    for (int i=0;i< count1;i++)
+                    {
+                        gpsPoint1[0] += latlongs1[i][0];
+                        gpsPoint1[1] += latlongs1[i][1];
+                    }
+                    gpsPoint1[0] /= count1;
+                    gpsPoint1[1] /= count1;
+                    GPSMap.Data.ScaleGPS.SetGPSDataPoin1(gpsPoint1);
+                    mode = Mode.normal;
+                }
+                break;
+            case Mode.calPoint2:
+                latlongs2.Add(gpsData);
+                int count2 = latlongs1.Count();
+                double[] gpsPoint2 = new double[]{0,0};
+                if (count2>= inputs.numPoints)
+                {
+                    for (int i=0;i< count2;i++)
+                    {
+                        gpsPoint2[0] += latlongs1[i][0];
+                        gpsPoint2[1] += latlongs1[i][1];
+                    }
+                    gpsPoint2[0] /= count2;
+                    gpsPoint2[1] /= count2;
+                    GPSMap.Data.ScaleGPS.SetGPSDataPoin1( gpsPoint2);
+                    mode = Mode.normal;
+                }
+                break;
+
+    }
+        return 0;
+    }
+
+    public void OnMapZoom(MapClickEventArgs args)
+    {
+        var location = args.Location;
+        var eventArgs = args.EventArgs as MouseEventArgs;
+
+        if (eventArgs != null)
+        {
+            if (!eventArgs.ShiftKey)
+            {
+                zoom++;
+            }
+            else
+            {
+                zoom--;
+            }
+        }
+
+    }
+}
+
+    
