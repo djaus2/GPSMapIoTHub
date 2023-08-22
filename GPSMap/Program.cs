@@ -1,6 +1,6 @@
-using GPSMap.Data;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Azure.Amqp;
 
 namespace GPSMap
 {
@@ -12,8 +12,11 @@ namespace GPSMap
 
             // Add services to the container.
             builder.Services.AddRazorPages();
+            //builder.Services.AddControllers();
+            //builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("Settings"));
+
+
             builder.Services.AddServerSideBlazor();
-            builder.Services.AddSingleton<WeatherForecastService>();
             builder.Services.AddTelerikBlazor();
 
             var app = builder.Build();

@@ -7,7 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Pages\Index - Copy.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Azure.Messaging.EventHubs" Version="5.9.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0-preview.7.23375.6" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Telerik.UI.for.Blazor" Version="4.3.0" />
   </ItemGroup>

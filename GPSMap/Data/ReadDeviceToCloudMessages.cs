@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using Azure;
 using Azure.Messaging.EventHubs.Consumer;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Configuration;
 //using CommandLine;
 
 namespace ReadD2cMessages
@@ -35,14 +36,13 @@ namespace ReadD2cMessages
     /// </summary>
     public class GPSCls
     {
-        static string EventHubConnectionString = "<Endpoint>";
-        static string HubName = "<Hub Name>";
+        private static readonly IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").AddEnvironmentVariables().Build();
         static bool showProperties = true;
         static Func<double[], int>? MyMethodName = null;
         static double lat = 0;
         static double lon = 45;
         static DateTime Start = DateTime.Now;
-        public static async Task Main(Func< double[], int> myMethodName)
+        public static async Task StartMonitor(Func< double[], int> myMethodName)
         {
             MyMethodName = myMethodName;
             System.Diagnostics.Debug.WriteLine("IoT Hub  - Read device to cloud messages. Ctrl-C to exit.\n");
@@ -53,12 +53,6 @@ namespace ReadD2cMessages
 
             // Set up a way for the user to gracefully shutdown
             using var cts = new CancellationTokenSource();
-            //System.Diagnostics.Debug.CancelKeyPress += (sender, eventArgs) =>
-            //{
-            //    eventArgs.Cancel = true;
-            //    cts.Cancel();
-            //    System.Diagnostics.Debug.WriteLine("Exiting...");
-            //};
 
             // Run the sample
             await ReceiveMessagesFromDeviceAsync(cts.Token);
@@ -70,7 +64,8 @@ namespace ReadD2cMessages
         // reading any messages sent from the simulated client.
         private static async Task ReceiveMessagesFromDeviceAsync(/*Parameters parameters,*/ CancellationToken ct)
         {
-            //string connectionString = parameters.GetEventHubConnectionString();
+            string EventHubConnectionString = config.GetValue<string>("EventHubConnectionString");
+            string HubName = config.GetValue<string>("HubName");
 
             // Create the consumer using the default consumer group using a direct connection to the service.
             // Information on using the client with a proxy can be found in the README for this quick start, here:
@@ -102,7 +97,7 @@ namespace ReadD2cMessages
                         data += '}';
            
                     DateTime xx = (DateTime)partitionEvent.Data.SystemProperties["iothub-enqueuedtime"];
-                    //System.Diagnostics.Debug.WriteLine("{0} {1}",Start,xx);
+                    System.Diagnostics.Debug.WriteLine("{0} {1}",Start,xx);
                     if (xx.Ticks < Start.Ticks)
                         continue;
                     System.Diagnostics.Debug.WriteLine($"\nMessage received on partition {partitionEvent.Partition.PartitionId}:");
@@ -110,7 +105,17 @@ namespace ReadD2cMessages
                     
                     if ((MyMethodName != null) &&(!string.IsNullOrEmpty(data)))
                     {
-                        Geolocation? _location = JsonConvert.DeserializeObject<Geolocation>(data);
+                        Geolocation? _location;
+                        if (data.Contains("Error"))
+                            continue;
+                        try
+                        {
+                            _location = JsonConvert.DeserializeObject<Geolocation>(data);
+                        } catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine("Skip");
+                            continue;
+                        }
 
                         if (_location != null)
                         {
@@ -150,7 +155,7 @@ namespace ReadD2cMessages
 
         private static void PrintProperties(KeyValuePair<string, object> prop)
         {
-            string propValue = prop.Value is DateTime time
+            string? propValue = prop.Value is DateTime time
                 ? time.ToString("O") // using a built-in date format here that includes milliseconds
                 : prop.Value.ToString();
 
