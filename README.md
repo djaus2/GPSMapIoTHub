@@ -16,7 +16,7 @@ You will need a Telerik license, whether a full license or a 30 day trial. Follo
 
 Azure IoT Hub and Device
 - As used with Sketch 7.
-- Having created them need Hub name.
+- Having created them need Hub name. 
 
 Now open this project and add your connection details in appsettings.json:
 - "HubName": "he IoT Hub Name
