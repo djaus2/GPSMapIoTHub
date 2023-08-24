@@ -1,14 +1,17 @@
 # GPSMap
 
-Monitor an Azure IoT Hub and  map the GPS coordinatess sent to it  as telemetry.
+As Blazor Server app to monitor an Azure IoT Hub and  map the GPS coordinatess sent to it  as telemetry.  
+Uses Telerik Map Component.
 
-![Device Image](GsMap/wwwroot/images/uart-gps-module-with-real-time-clock.jpg)
+![Device Image](https://github.com/djaus2/GPSMapIoTHub/blob/master/GPSMap/wwwroot/images/uart-gps-module-with-real-time-clock.jpg)  
+**_A typical GPS Device, suitable for Arduino use_**
 
 ## About
 
 This project is a coming together of the 7th Arduino Sketch (Azure_IoT_Hub_GPS) on GitHub at [djaus2/RPI Pico W GPS and Bluetooth](https://github.com/djaus2/RpiPicoWGPSandBT) and the [Telerik Map Demo](https://demos.telerik.com/blazor-ui/map/overview). It started out as an endeavour to map that Sketch's IoT Hub telemetry in Azure IOT Central but this was deemed a simpler approach. This app maps the current location of the GPS device.
 
-![App Image](/GsMap/wwwroot/images/gpsmapapp.png)
+![App Image](https://github.com/djaus2/GPSMapIoTHub/blob/master/GPSMap/wwwroot/images/gpsmapapp.png)  
+**_The App showing the location of the GPS device_**
 
 ## Getting Started
 
