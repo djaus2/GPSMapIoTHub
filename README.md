@@ -1,6 +1,7 @@
 # GPSMap
 
-As Blazor Server app to monitor an Azure IoT Hub and  map the GPS coordinatess sent to it  as telemetry.
+As Blazor Server app to monitor an Azure IoT Hub and  map the GPS coordinatess sent to it  as telemetry.  
+Uses Telerik Map Component.
 
 ![Device Image](GsMap/wwwroot/images/uart-gps-module-with-real-time-clock.jpg)
 
