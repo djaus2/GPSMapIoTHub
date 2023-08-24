@@ -12,7 +12,7 @@ You will need a Telerik license, whether a full license or a 30 day trial. Follo
 - Step 0: Download Telerik UI for Blazor
 - Step 2: Add the Telerik NuGet Feed to Visual Studio
 - Step 3: Install the Telerik UI for Blazor Components
-  The other steps have been implemented in teh project.
+  The other steps have been implemented in the project.
 
 Azure IoT Hub and Device
 - As used with Sketch 7.
