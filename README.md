@@ -2,8 +2,15 @@
 
 Monitor an Azure IoT Hub and  map the GPS coordinatess sent to it  as telemetry.
 
-Similar in parts to map in Azure IOT Central but simpler!
-
 ## About
 
-This project is a coming together of the 7th Sketch (Azure_IoT_Hub_GPS) on GitHub at [djaus2/RPI Pico W GPS and Bluetooth](https://github.com/djaus2/RpiPicoWGPSandBT) and the [Telerik Map Demo](https://demos.telerik.com/blazor-ui/map/overview)
+This project is a coming together of the 7th Arduino Sketch (Azure_IoT_Hub_GPS) on GitHub at [djaus2/RPI Pico W GPS and Bluetooth](https://github.com/djaus2/RpiPicoWGPSandBT) and the [Telerik Map Demo](https://demos.telerik.com/blazor-ui/map/overview). It started out as an endeavour to map that Sketch's IoT Hub telemetry in Azure IOT Central but this was deemed a simpler approach. This app maps the current location of the GPS device.
+
+## Getting Started
+
+You will need a Telerik license, whether a full license or a 3o day trial. Follow the steps as below3 at [First Steps with Server-Side UI for Blazor](https://docs.telerik.com/blazor-ui/getting-started/server-blazor?_ga=2.73417493.680605814.1692843673-472055910.1692083918&_gl=1*13uct7u*_ga*NDcyMDU1OTEwLjE2OTIwODM5MTg.*_ga_9JSNBCSF54*MTY5Mjg0MzY3NC44LjEuMTY5Mjg0Mzc4NC4xMS4wLjA.)
+  - Step 0: Download Telerik UI for Blazor
+  - Step 2: Add the Telerik NuGet Feed to Visual Studio
+  - Step 3: Install the Telerik UI for Blazor Components
+
+- Now open this project and add your connection details in appsettings.json
