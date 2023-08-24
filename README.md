@@ -9,8 +9,18 @@ This project is a coming together of the 7th Arduino Sketch (Azure_IoT_Hub_GPS) 
 ## Getting Started
 
 You will need a Telerik license, whether a full license or a 3o day trial. Follow the steps as below3 at [First Steps with Server-Side UI for Blazor](https://docs.telerik.com/blazor-ui/getting-started/server-blazor?_ga=2.73417493.680605814.1692843673-472055910.1692083918&_gl=1*13uct7u*_ga*NDcyMDU1OTEwLjE2OTIwODM5MTg.*_ga_9JSNBCSF54*MTY5Mjg0MzY3NC44LjEuMTY5Mjg0Mzc4NC4xMS4wLjA.)
-  - Step 0: Download Telerik UI for Blazor
-  - Step 2: Add the Telerik NuGet Feed to Visual Studio
-  - Step 3: Install the Telerik UI for Blazor Components
+- Step 0: Download Telerik UI for Blazor
+- Step 2: Add the Telerik NuGet Feed to Visual Studio
+- Step 3: Install the Telerik UI for Blazor Components
 
-- Now open this project and add your connection details in appsettings.json
+Azure IoT Hub and Device
+- Having created them, see elsewhere ..
+
+Now open this project and add your connection details in appsettings.json:
+- "HubName": "he IoT Hub Name
+- "EventHubConnectionString": The Endpoint
+  - Go to the **IoT Hub** in **Azure Portal**
+  - Select **Built-in endpoints**
+  - Scroll down to **Event Hub compatible endpoint**
+  - Select the **Endpoint**
+
