@@ -36,7 +36,7 @@ namespace ReadD2cMessages
     /// </summary>
     public class GPSCls
     {
-        private static readonly IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").AddEnvironmentVariables().Build();
+        private static readonly IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         static bool showProperties = true;
         static Func<double[], int>? MyMethodName = null;
         static double lat = 0;
