@@ -29,7 +29,7 @@ Now open this project and add your connection details in appsettings.json:
 OR
 
 If you have AzCli installed:
-- Create a prompted and login
+- Create a prompt and login
 - Run ```az iot hub connection-string show -n <IoT Hub name> --default-eventhub```
   
 
