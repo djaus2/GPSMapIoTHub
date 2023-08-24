@@ -28,7 +28,7 @@ Now open this project and add your connection details in appsettings.json:
  
 OR
 
-If you have AzCli installed:
+If you have [Azure Cli](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli) installed:
 - Create a prompt and login
 - Run ```az iot hub connection-string show -n <IoT Hub name> --default-eventhub```
   
