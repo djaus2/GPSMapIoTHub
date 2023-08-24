@@ -15,6 +15,7 @@ You will need a Telerik license, whether a full license or a 30 day trial. Follo
   The other steps have been implemented in teh project.
 
 Azure IoT Hub and Device
+- As used with Sketch 7.
 - Having created them, see elsewhere ..
 
 Now open this project and add your connection details in appsettings.json:
@@ -24,4 +25,11 @@ Now open this project and add your connection details in appsettings.json:
   - Select **Built-in endpoints**
   - Scroll down to **Event Hub compatible endpoint**
   - Select the **Endpoint**
+ 
+OR
+
+If you have AzCli installed:
+- Create a prompted and login
+- Run ```az iot hub connection-string show -n <IoT Hub name> --default-eventhub```
+  
 
