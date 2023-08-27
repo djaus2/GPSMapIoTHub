@@ -13,7 +13,29 @@ This project is a coming together of the 7th Arduino Sketch (Azure_IoT_Hub_GPS) 
 ![App Image](https://github.com/djaus2/GPSMapIoTHub/blob/master/GPSMap/wwwroot/images/gpsmapapp.png)  
 **_The App showing the location of the GPS device_**
 
+## Azure  Sketch
+As per the seventh Sketch in [djaus2/RPI Pico W GPS and Bluetooth](https://github.com/djaus2/RpiPicoWGPSandBT)  but modified specifically for this app. 
+- Json is single level.
+  - eg. ```{"lat":-37.7468138,"lon":144.8956847,"alt":64.6}```
+- Includes Cloud to Device Messages that are interpreted as  Telemetry config _(case sensitive)_ commands:
+  - Reset
+    - Restarts the telemetry timing
+    - At first is 1s but doubles each send until it reaches 60s.
+  - Start
+    - Restarts telemetry without any change to the period.
+  - Stop
+    - Stops telemetry without any chnage to the period.
+  - Set-Period
+    - Set the telemetry peroiod
+    - The command is Set separated using a highen to:
+      - The period, a numerical parameter in milliseconds
+    - eg. ```Set-30000```  sets the period between sends to 30 seconds _(approx)_.
+
+> 2Do add abilty to send these from GPSMap app.
+
 ## Getting Started
+
+Setup the above Sketch in an Arduino Pico W. See [djaus2/RPI Pico W GPS and Bluetooth](https://github.com/djaus2/RpiPicoWGPSandBT) .
 
 You will need a Telerik license, whether a full license or a 30 day trial. Follow the steps as below3 at [First Steps with Server-Side UI for Blazor](https://docs.telerik.com/blazor-ui/getting-started/server-blazor?_ga=2.73417493.680605814.1692843673-472055910.1692083918&_gl=1*13uct7u*_ga*NDcyMDU1OTEwLjE2OTIwODM5MTg.*_ga_9JSNBCSF54*MTY5Mjg0MzY3NC44LjEuMTY5Mjg0Mzc4NC4xMS4wLjA.)
 - Step 0: Download Telerik UI for Blazor
