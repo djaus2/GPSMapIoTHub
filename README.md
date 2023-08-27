@@ -14,11 +14,13 @@ This project is a coming together of the 7th Arduino Sketch (Azure_IoT_Hub_GPS) 
 **_The App showing the location of the GPS device_**
 
 ## Azure  Sketch
-As per the seventh Sketch in [djaus2/RPI Pico W GPS and Bluetooth](https://github.com/djaus2/RpiPicoWGPSandBT)  but modified specifically for this app. Json is single level. Includes Clod to Device Messages that are interpreted as  Teleetry config commands:
-- Reset
-- Start
-- Stop
-- Set-<Period>
+As per the seventh Sketch in [djaus2/RPI Pico W GPS and Bluetooth](https://github.com/djaus2/RpiPicoWGPSandBT)  but modified specifically for this app. 
+- Json is single level.
+- Includes Cluod to Device Messages that are interpreted as  Teleetry config commands:
+  - Reset
+  - Start
+  - Stop
+  - Set-<Period>
 
 ## Getting Started
 
