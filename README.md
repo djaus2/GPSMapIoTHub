@@ -52,7 +52,7 @@ Now open this project and add your connection details in appsettings.json:
 - "HubConnectionString": The IoT Hub connection string
   - On the left-side pane of your IoT hub, select Shared access policies
   - From the list of policies, select the service policy.
-  - Copy the Primary connection string and save the value.
+  - Copy the Primary connection string.
 - "DeviceId": The target device's Id
 - "EventHubConnectionString": The Endpoint
   - Go to the **IoT Hub** in **Azure Portal**
@@ -65,6 +65,7 @@ OR
 
 If you have [Azure Cli installed](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli).
 - Create an azcli prompt and login
+- Run ```az iot hub connection-string show -n <IoT Hub name> --policy-name service --key-type primary```
 - Run ```az iot hub connection-string show -n <IoT Hub name> --default-eventhub```
   
 
