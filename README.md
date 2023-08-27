@@ -13,6 +13,13 @@ This project is a coming together of the 7th Arduino Sketch (Azure_IoT_Hub_GPS) 
 ![App Image](https://github.com/djaus2/GPSMapIoTHub/blob/master/GPSMap/wwwroot/images/gpsmapapp.png)  
 **_The App showing the location of the GPS device_**
 
+## Azure_  Sketch
+As per []() but modified specifically for this app. Json is single level. Includes Clod to Device Messages that are interpreted as  Teleetry config commands:
+- Reset
+- Start
+- Stop
+- Set-<Period>
+
 ## Getting Started
 
 You will need a Telerik license, whether a full license or a 30 day trial. Follow the steps as below3 at [First Steps with Server-Side UI for Blazor](https://docs.telerik.com/blazor-ui/getting-started/server-blazor?_ga=2.73417493.680605814.1692843673-472055910.1692083918&_gl=1*13uct7u*_ga*NDcyMDU1OTEwLjE2OTIwODM5MTg.*_ga_9JSNBCSF54*MTY5Mjg0MzY3NC44LjEuMTY5Mjg0Mzc4NC4xMS4wLjA.)
