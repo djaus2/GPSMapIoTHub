@@ -31,6 +31,8 @@
 @Center[0]&nbsp;&nbsp;
 @Center[1]<br/>
 
+<p><button @onclick=@SendCommand>Send&nbsp;</button> <input type="text" width=200"" @bind="@Command"></p>
+
 
 <button @onclick="() => {zoom++;}">&nbsp;+&nbsp;</button>
 <button @onclick="() => {zoom--;}">&nbsp;-&nbsp;</button>
@@ -76,6 +78,12 @@
 
     private const int lat = 0;
     private const int lon = 1;
+    private string Command = "";
+
+    async Task SendCommand()
+    {
+        await GPSMap.Data.SendCloud2DeviceMsgs.Invoke(Command);
+    }
 
     public string[] Subdomains { get; set; } = new string[] { "a", "b", "c" };
     public string UrlTemplate { get; set; } = "https://#= subdomain #.tile.openstreetmap.org/#= zoom #/#= x #/#= y #.png";
