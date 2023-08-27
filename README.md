@@ -16,6 +16,7 @@ This project is a coming together of the 7th Arduino Sketch (Azure_IoT_Hub_GPS) 
 ## Azure  Sketch
 As per the seventh Sketch in [djaus2/RPI Pico W GPS and Bluetooth](https://github.com/djaus2/RpiPicoWGPSandBT)  but modified specifically for this app. 
 - Json is single level.
+  - eg. ```{"lat":-37.7468138,"lon":144.8956847,"alt":64.6}```
 - Includes Cloud to Device Messages that are interpreted as  Telemetry config _(case sensitive)_ commands:
   - Reset
     - Restarts the telemetry timing
