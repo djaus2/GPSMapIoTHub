@@ -48,13 +48,16 @@ Azure IoT Hub and Device
 - Having created them need Hub name. 
 
 Now open this project and add your connection details in appsettings.json:
-- "HubName": "he IoT Hub Name
+- "HubName": The IoT Hub Name
+- "HubConnectionString": The IoT Hub connection string
+- "DeviceId": The target device's Id
 - "EventHubConnectionString": The Endpoint
   - Go to the **IoT Hub** in **Azure Portal**
   - Select **Built-in endpoints**
   - Scroll down to **Event Hub compatible endpoint**
   - Select the **Endpoint**
- 
+
+
 OR
 
 If you have [Azure Cli installed](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli).
