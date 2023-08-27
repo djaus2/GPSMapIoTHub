@@ -31,7 +31,7 @@ As per the seventh Sketch in [djaus2/RPI Pico W GPS and Bluetooth](https://githu
       - The period, a numerical parameter in milliseconds
     - eg. ```Set-30000```  sets the period between sends to 30 seconds _(approx)_.
 
-> Have added abilty to send commands from GPSMap app to teh device.
+> Have added abilty to send commands from GPSMap app to the device.
 
 ## Getting Started
 
