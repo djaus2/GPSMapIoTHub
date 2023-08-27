@@ -28,15 +28,29 @@
 </style>
 
 
-@Center[0]&nbsp;&nbsp;
-@Center[1]<br/>
 
-<p><button @onclick=@SendCommand>Send&nbsp;</button> <input type="text" width=200"" @bind="@Command"></p>
+<table>
+    <tr>
+        <td>Latitude:</td>
+        <td>@Center[0]</td>
+    </tr>
+    <tr>
+        <td>Longitude:</td>
+        <td>@Center[1]</td>
+    </tr>
+    <tr>
+        <td><button @onclick=@SendCommand>Send</button></td>
+        <td><TelerikTextBox @bind-Value="@Command" Placeholder="Start,Stop,Reset,Set-Period" /></td>
+    </tr>
+    <tr>
+        <td><button @onclick="() => {zoom++;}">&nbsp;&nbsp;&nbsp+&nbsp;&nbsp;&nbsp</button></td>
+        <td><button @onclick="() => {zoom--;}">&nbsp;&nbsp;&nbsp;--&nbsp;&nbsp;&nbsp;</button></td>
+    </tr>
+</table>
 
 
-<button @onclick="() => {zoom++;}">&nbsp;+&nbsp;</button>
-<button @onclick="() => {zoom--;}">&nbsp;-&nbsp;</button>
-<br />
+
+
 
 <TelerikMap Center="@Center"
             MinZoom="3"
@@ -101,7 +115,9 @@
     {
         if (first)
         {
+            GPSMap.Data.SendCloud2DeviceMsgs.Setup();
             await ReadD2cMessages.GPSCls.StartMonitor(SetCoords); //}
+ 
         }
 
     }

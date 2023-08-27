@@ -23,8 +23,10 @@ namespace GPSMap.Data
         public static void Setup()
         {
             string connectionString = config.GetValue<string>("HubConnectionString");
+            targetDevice = config.GetValue<string>("DeviceId");
             System.Diagnostics.Debug.WriteLine("Send Cloud-to-Device message\n");
             serviceClient = new IotHubServiceClient(connectionString);
+            serviceClient.Messages.OpenAsync().Wait();
         }
 
         public static async Task Invoke(string msg)
