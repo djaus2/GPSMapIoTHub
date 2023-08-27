@@ -16,17 +16,18 @@ This project is a coming together of the 7th Arduino Sketch (Azure_IoT_Hub_GPS) 
 ## Azure  Sketch
 As per the seventh Sketch in [djaus2/RPI Pico W GPS and Bluetooth](https://github.com/djaus2/RpiPicoWGPSandBT)  but modified specifically for this app. 
 - Json is single level.
-- Includes Cluod to Device Messages that are interpreted as  Telemetry config _(case sensitive)_ commands:
+- Includes Cloud to Device Messages that are interpreted as  Telemetry config _(case sensitive)_ commands:
   - Reset
     - Restarts the telemetry timing
     - At first is 1s but doubles each send until it reaches 60s.
   - Start
-    - Restarts without any change to the period.
+    - Restarts telemetry without any change to the period.
   - Stop
-    - Stops telemetry without any chnage to teh period.
+    - Stops telemetry without any chnage to the period.
   - Set-Period
+    - Set the telemetry peroiod
     - The command is Set separated using a highen to:
-    - The period, a numerical parameter in milliseconds
+      - The period, a numerical parameter in milliseconds
     - eg. ```Set-30000```  sets the period between sends to 30 seconds _(approx)_.
 
 ## Getting Started
