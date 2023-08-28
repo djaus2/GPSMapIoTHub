@@ -15,6 +15,7 @@ using Azure;
 using Azure.Messaging.EventHubs.Consumer;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
+using System.Runtime.CompilerServices;
 //using CommandLine;
 
 namespace ReadD2cMessages
@@ -36,6 +37,7 @@ namespace ReadD2cMessages
     /// </summary>
     public class GPSCls
     {
+        public static bool Loading { get; set; } = true;
         private static readonly IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         static bool showProperties = true;
         static Func<double[], int>? MyMethodName = null;
@@ -44,6 +46,7 @@ namespace ReadD2cMessages
         static DateTime Start = DateTime.Now;
         public static async Task StartMonitor(Func< double[], int> myMethodName)
         {
+            Loading = true;
             MyMethodName = myMethodName;
             System.Diagnostics.Debug.WriteLine("IoT Hub  - Read device to cloud messages. Ctrl-C to exit.\n");
             System.Diagnostics.Debug.WriteLine(".NET 6.0 C# 9.0.\n");
@@ -100,6 +103,7 @@ namespace ReadD2cMessages
                     System.Diagnostics.Debug.WriteLine("{0} {1}",Start,xx);
                     if (xx.Ticks < Start.Ticks)
                         continue;
+                    Loading = false;
                     System.Diagnostics.Debug.WriteLine($"\nMessage received on partition {partitionEvent.Partition.PartitionId}:");
                     System.Diagnostics.Debug.WriteLine($"\tMessage body: {data}");
                     

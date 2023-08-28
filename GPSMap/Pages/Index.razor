@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using BlazorPro.Spinkit
 
 <!--From: https://demos.telerik.com/blazor-ui/map/overview -->
 
@@ -27,8 +28,10 @@
     }
 </style>
 
+<h1>GPS Map with IoT Hub</h1>
 
-
+@if(!Loading)
+{
 <table>
     <tr>
         <td>Latitude:</td>
@@ -87,9 +90,15 @@
         </MapLayer>
     </MapLayers>
 </TelerikMap>
+}
+else
+{
+    <p><em>Loading...</em></p>
+     <Pulse />
+}
 
 @code {
-
+    private bool Loading { get { return ReadD2cMessages.GPSCls.Loading; } }
     private const int lat = 0;
     private const int lon = 1;
     private string Command = "";
