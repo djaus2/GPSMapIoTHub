@@ -1,6 +1,6 @@
 # GPSMap
 
-As Blazor Server app to monitor an Azure IoT Hub and  map the GPS coordinatess sent to it  as telemetry.  
+A Blazor Server app to monitor an Azure IoT Hub and  map the GPS coordinatess sent to it  as telemetry.  
 Uses Telerik Map Component.
 
 ![Device Image](https://github.com/djaus2/GPSMapIoTHub/blob/master/GPSMap/wwwroot/images/uart-gps-module-with-real-time-clock.jpg)  
@@ -31,7 +31,7 @@ As per the seventh Sketch in [djaus2/RPI Pico W GPS and Bluetooth](https://githu
       - The period, a numerical parameter in milliseconds
     - eg. ```Set-30000```  sets the period between sends to 30 seconds _(approx)_.
 
-> 2Do add abilty to send these from GPSMap app.
+> Have added abilty to send commands from GPSMap app to the device.
 
 ## Getting Started
 
@@ -48,17 +48,24 @@ Azure IoT Hub and Device
 - Having created them need Hub name. 
 
 Now open this project and add your connection details in appsettings.json:
-- "HubName": "he IoT Hub Name
+- "HubName": The IoT Hub Name
+- "HubConnectionString": The IoT Hub connection string
+  - On the left-side pane of your IoT hub, select Shared access policies
+  - From the list of policies, select the service policy.
+  - Copy the Primary connection string.
+- "DeviceId": The target device's Id
 - "EventHubConnectionString": The Endpoint
   - Go to the **IoT Hub** in **Azure Portal**
   - Select **Built-in endpoints**
   - Scroll down to **Event Hub compatible endpoint**
   - Select the **Endpoint**
- 
+
+
 OR
 
 If you have [Azure Cli installed](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows?tabs=azure-cli).
 - Create an azcli prompt and login
+- Run ```az iot hub connection-string show -n <IoT Hub name> --policy-name service --key-type primary```
 - Run ```az iot hub connection-string show -n <IoT Hub name> --default-eventhub```
   
 
