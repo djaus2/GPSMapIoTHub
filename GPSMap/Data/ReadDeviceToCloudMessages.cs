@@ -16,16 +16,35 @@ using Azure.Messaging.EventHubs.Consumer;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
 using System.Runtime.CompilerServices;
+using Microsoft.Azure.Amqp.Framing;
 //using CommandLine;
 
 namespace ReadD2cMessages
 {
+    public enum AppMode { live=1, from=2, fromto=3, none=0 }
+
+    public class Telemetry: Geolocation
+    {
+        public DateTime TimeStamp { get; set; }
+
+        public Telemetry() { }
+        public Telemetry(DateTime stamp) { TimeStamp = stamp; }
+        public Telemetry(Geolocation location, DateTime stamp) 
+        { 
+            TimeStamp = stamp;
+            lat = location.lat;
+            lon = location.lon;
+            alt = location.alt;
+        }
+    }
     public class Geolocation
     {
         public double lat { get; set; }
         public double lon { get; set; }
         public double alt { get; set; }
-  
+
+        public DateTime TimeStamp { get; set; }
+
     }
 
     public class Geopoint
@@ -37,28 +56,45 @@ namespace ReadD2cMessages
     /// </summary>
     public class GPSCls
     {
-        public static bool Loading { get; set; } = true;
+        public static DateTime startTime = DateTime.Now;
+        public static DateTime endTime = DateTime.Now;
+
+        public static List<Telemetry> telemetrys { get; set;} = new List<Telemetry>();
+        public static bool Loading { get; set; } = false;
         private static readonly IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         static bool showProperties = true;
-        static Func<double[], int>? MyMethodName = null;
+        static Func<Telemetry, int>? MyMethodName = null;
         static double lat = 0;
         static double lon = 45;
         static DateTime Start = DateTime.Now;
-        public static async Task StartMonitor(Func< double[], int> myMethodName)
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        public static CancellationTokenSource cts;
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        public static CancellationToken token;
+
+        public static void StopMonitor()
+        {
+            cts.Cancel();
+            //token.Cancel();
+        }
+        public static async Task StartMonitor(Func< Telemetry, int> myMethodName)
         {
             Loading = true;
+            telemetrys = new List<Telemetry>();
             MyMethodName = myMethodName;
             System.Diagnostics.Debug.WriteLine("IoT Hub  - Read device to cloud messages. Ctrl-C to exit.\n");
             System.Diagnostics.Debug.WriteLine(".NET 6.0 C# 9.0.\n");
-            Start = DateTime.Now.ToUniversalTime();
+            Start = ((DateTime)startTime).ToUniversalTime();
             System.Diagnostics.Debug.WriteLine("Do you want to SHOW System and App  Properties sent by IoT Hub? [Y]es Default No");
             System.Diagnostics.Debug.WriteLine("");
 
             // Set up a way for the user to gracefully shutdown
-            using var cts = new CancellationTokenSource();
+            cts = new CancellationTokenSource();
+            token = cts.Token;
 
             // Run the sample
-            await ReceiveMessagesFromDeviceAsync(cts.Token);
+            await ReceiveMessagesFromDeviceAsync(token);
 
             System.Diagnostics.Debug.WriteLine("Cloud message reader finished.");
         }
@@ -94,7 +130,7 @@ namespace ReadD2cMessages
                 //   https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/eventhub/Azure.Messaging.EventHubs.Processor/README.md
                 await foreach (PartitionEvent partitionEvent in consumer.ReadEventsAsync(ct))
                 {
-
+                    ct.ThrowIfCancellationRequested();
                     string data = Encoding.UTF8.GetString(partitionEvent.Data.Body.ToArray());
                     if (data[data.Length - 1] != '}')
                         data += '}';
@@ -128,10 +164,14 @@ namespace ReadD2cMessages
                             double lat = location.lat;
                             double lon = location.lon;
                             double alt = location.alt;
+
+                            Telemetry telem = new Telemetry(location, xx);
+                            telemetrys.Add(telem);
   
                             double[] dbl = new double[] { lat, lon };
-                            int res = ((Func<double[], int>)MyMethodName)(dbl);
+                            int res = ((Func<Telemetry, int>)MyMethodName)(telem);
                         }
+                        ct.ThrowIfCancellationRequested();
                     }
 
                     if (showProperties)
@@ -154,6 +194,7 @@ namespace ReadD2cMessages
             {
                 // This is expected when the token is signaled; it should not be considered an
                 // error in this scenario.
+                System.Diagnostics.Debug.WriteLine("Cancelled");
             }
         }
 

@@ -30,31 +30,101 @@
 
 <h1>GPS Map with IoT Hub</h1>
 
-@if(!Loading)
-{
+
 <table>
     <tr>
-        <td>Latitude:</td>
+        <td align="right"><b><i>Lattitude:</i></b></td>
         <td>@Center[0]</td>
-    </tr>
-    <tr>
-        <td>Longitude:</td>
+        <td align ="right"><b><i>Longitude:</i></b></td>
         <td>@Center[1]</td>
     </tr>
     <tr>
+        <td align ="right"><b><i>Date:</i></b></td>
+        <td>@TimeStamp.ToShortDateString()</td>
+        <td align ="right"><b><i>Time:</i></b></td>
+        <td>@TimeStamp.ToShortTimeString()</td>
+    </tr>
+    <tr>
         <td><button @onclick=@SendCommand>Send</button></td>
-        <td><TelerikTextBox @bind-Value="@Command" Placeholder="Start,Stop,Reset,Set-Period" /></td>
+        <td colspan="3"><TelerikTextBox @bind-Value="@Command" Placeholder="Start,Stop,Reset,Set-Period" /></td>
     </tr>
     <tr>
         <td><button @onclick="() => {zoom++;}">&nbsp;&nbsp;&nbsp+&nbsp;&nbsp;&nbsp</button></td>
         <td><button @onclick="() => {zoom--;}">&nbsp;&nbsp;&nbsp;--&nbsp;&nbsp;&nbsp;</button></td>
+
+        @if(!Running)
+        {
+            <td><button @onclick="async () =>  {await Runn(true);}">START</button></td>
+        }
+        else
+        {
+            <td><button @onclick="async () => {await Runn(false);}">STOP</button></td>
+        }
     </tr>
+    <tr>
+        <td colspan="4"><b><i>AppMode:&nbsp;</i></b>
+         @(_appMode == 0 ? "No selection yet" : AppModeOptions[_appMode - 1].GenderText)</td>
+    </tr>
+    @if(!Running)
+    {
+        <tr>
+            <td colspan="2">
+                <TelerikRadioGroup Data="@AppModeOptions"
+                                   Value="@_appMode"
+                                   ValueChanged="@( (int v) => ValueChangedHandler(v) )"
+                                   ValueField="@nameof(AppModeModel.GenderId)"
+                                   TextField="@nameof(AppModeModel.GenderText)">
+                </TelerikRadioGroup>
+            </td>
+        </tr>
+    }
+    @if ((appMode == ReadD2cMessages.AppMode.from)|| (appMode == ReadD2cMessages.AppMode.fromto))
+    {
+        <tr>
+            <td colspan="4">
+                <label>Selected start time:</label>@startTime
+            </td>
+        </tr>
+    }
+    @if  (appMode == ReadD2cMessages.AppMode.fromto)
+    {
+        <tr>
+            <td colspan="4">
+                <label>Selected end time:</label>@endTime
+            </td>
+        </tr>
+    }
 </table>
+@if(!Running)
+{
+    @if ((appMode == ReadD2cMessages.AppMode.from)|| (appMode == ReadD2cMessages.AppMode.fromto))
+    {
+        <br />
+
+        <TelerikDateTimePicker Min="@Min" Max="@Max" @bind-Value="@startTime"
+                               Format="dd MMM yyyy HH:mm:ss" Width="250px"></TelerikDateTimePicker>
+    }
+    @if (appMode == ReadD2cMessages.AppMode.fromto)
+    {
+        
+        <br />
+
+        <TelerikDateTimePicker  Min="@Min" Max="@Max" @bind-Value="@endTime"
+                               Format="dd MMM yyyy HH:mm:ss" Width="250px"></TelerikDateTimePicker>
+    }
+}
+    <br />
 
 
+@if (Loading)
+{
+    <p><em>Loading...</em></p>
+    <Pulse />
+    <p>Note: Reading historic Telemetry then waiting to first send which can be up to 1 minute.</p>
+}
 
-
-
+@if (MapIsVisble)
+{
 <TelerikMap Center="@Center"
             MinZoom="3"
             OnClick="@OnMapZoom"
@@ -91,17 +161,88 @@
     </MapLayers>
 </TelerikMap>
 }
-else
-{
-    <p><em>Loading...</em></p>
-     <Pulse />
-}
+
+
 
 @code {
-    private bool Loading { get { return ReadD2cMessages.GPSCls.Loading; } }
+    DateTime startTime
+    {
+        get
+        {
+            return ReadD2cMessages.GPSCls.startTime;
+        }
+        set
+        {
+            ReadD2cMessages.GPSCls.startTime = value;
+        }
+    }
+    DateTime endTime
+    {
+        get
+        {
+            return ReadD2cMessages.GPSCls.endTime;
+        }
+        set
+        {
+            ReadD2cMessages.GPSCls.startTime = value;
+        }
+    }
+    private bool Running { get; set; } = false;
+    async Task Runn(bool mode)
+    {
+        Running = !Running;
+        
+        StateHasChanged();
+        if (Running)
+        {
+            await ReadD2cMessages.GPSCls.StartMonitor(SetCoords);
+        }
+        else
+        {
+            StateHasChanged();
+            ReadD2cMessages.GPSCls.StopMonitor();
+        }
+    }
+
+
+    public DateTime Min = new DateTime(2023, 8, 1, 0, 0, 0);
+    public DateTime Max = new DateTime(2025, 1, 1, 19, 30, 45);
+
+    TelerikRadioGroup<AppModeModel, int?> RadioGroupRef { get; set; }
+
+
+    private ReadD2cMessages.AppMode appMode { get; set; } = ReadD2cMessages.AppMode.live;
+
+    int _appMode { get; set; } = 0;
+
+    List<AppModeModel> AppModeOptions { get; set; } = new List<AppModeModel>
+    {
+        new AppModeModel { GenderId = 1, GenderText = "Live" },
+        new AppModeModel { GenderId = 2, GenderText = "Previous From to Live" },
+        new AppModeModel { GenderId = 3, GenderText = "Previous From - To" },
+    };
+
+    public class AppModeModel
+    {
+        public int GenderId { get; set; }
+        public string GenderText { get; set; } = "";
+    }
+
+    void ValueChangedHandler(int newValue)
+    {
+        _appMode = newValue;
+        appMode = (ReadD2cMessages.AppMode)newValue;
+        System.Diagnostics.Debug.WriteLine($"New App Mode: {appMode}");
+        StateHasChanged();
+    }
+
+    public bool Loading { get { return ReadD2cMessages.GPSCls.Loading; } }
     private const int lat = 0;
     private const int lon = 1;
     private string Command = "";
+
+    private DateTime TimeStamp = DateTime.Now;
+
 
     async Task SendCommand()
     {
@@ -117,7 +258,7 @@ else
 
 
     List<double[]> latlongs1 = new List<double[]>();
-    List<double[]>  latlongs2 = new List<double[]>();
+    List<double[]> latlongs2 = new List<double[]>();
 
 
     protected override async Task OnAfterRenderAsync(bool first)
@@ -125,8 +266,8 @@ else
         if (first)
         {
             GPSMap.Data.SendCloud2DeviceMsgs.Setup();
-            await ReadD2cMessages.GPSCls.StartMonitor(SetCoords); //}
- 
+
+
         }
 
     }
@@ -140,6 +281,7 @@ else
     protected override async Task  OnInitializedAsync()
     {
         _zoom = 16;
+        MapIsVisble = true;
         await Delay(100);
     }
 
@@ -297,17 +439,26 @@ else
 
     }
 
+    bool MapIsVisble = true;
     /// <summary>
     /// Delegate to IoT HUb software
     /// </summary>
     /// <param name="coords">double[2]:lattitue,longitude</param>
-    int SetCoords(double[] coords)
+    int SetCoords(ReadD2cMessages.Telemetry telem)
     {
+        if (!MapIsVisble)
+        {
+            MapIsVisble = true;
+            StateHasChanged();
+        }
+        //Loading = false and Running=true here
+        double[] coords = new double[] { telem.lat, telem.lon };
+        TimeStamp = telem.TimeStamp;
         Center = coords;
         MarkerDataGPSPoint[0].LatLng = Center;
         MarkerDataGPSPoint[0].Address = $"{MarkerDataGPSPoint[0].LatLng[0]},{MarkerDataGPSPoint[0].LatLng[1]}";
 
-        StateHasChanged();          
+        StateHasChanged();
         return 0;
     }
 }
