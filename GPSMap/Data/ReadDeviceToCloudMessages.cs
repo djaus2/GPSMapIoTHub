@@ -17,11 +17,12 @@ using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
 using System.Runtime.CompilerServices;
 using Microsoft.Azure.Amqp.Framing;
+using Azure.Core;
 //using CommandLine;
 
 namespace ReadD2cMessages
 {
-    public enum AppMode { live=1, from=2, fromto=3, none=0 }
+    public enum AppMode { live=1, from=2, fromto=3, play=4,loaded = 5, none=0 }
 
     public class Telemetry: Geolocation
     {
@@ -43,19 +44,14 @@ namespace ReadD2cMessages
         public double lon { get; set; }
         public double alt { get; set; }
 
-        public DateTime TimeStamp { get; set; }
-
     }
 
-    public class Geopoint
-    {
-        public Geolocation location {get; set;}
-    }
     /// <summary>
     /// A sample to illustrate reading Device-to-Cloud messages from a service app.
     /// </summary>
     public class GPSCls
     {
+        public static AppMode appMode { get; set; } = AppMode.none;
         public static DateTime startTime = DateTime.Now;
         public static DateTime endTime = DateTime.Now;
 
@@ -66,17 +62,51 @@ namespace ReadD2cMessages
         static Func<Telemetry, int>? MyMethodName = null;
         static double lat = 0;
         static double lon = 45;
-        static DateTime Start = DateTime.Now;
+        static DateTime StartUniversal = DateTime.Now.ToUniversalTime();
+        static DateTime EndUniversal = DateTime.Now.ToUniversalTime();
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public static CancellationTokenSource cts;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public static CancellationToken token;
 
+        public static async Task Delay(int del)
+        {
+            await Task.Delay(del);
+        }
+
+        public static async Task Playy()
+        {
+            
+            if ((MyMethodName != null) &&(telemetrys.Count() !=0))
+            {
+                appMode = AppMode.play;
+                int count = telemetrys.Count();
+                for (int i=0; i< count; i++) 
+                {
+
+                    int res = ((Func<Telemetry, int>)MyMethodName)(telemetrys[i]);
+                    if (i < (count - 1))
+                    {
+                        TimeSpan span = telemetrys[i + 1].TimeStamp.Subtract(
+                            telemetrys[i ].TimeStamp);
+
+                        await Delay(span.Milliseconds);
+                    }
+                    appMode = AppMode.loaded;
+                    
+                }
+            }
+            else
+            {
+
+            }
+            
+        }
+
         public static void StopMonitor()
         {
             cts.Cancel();
-            //token.Cancel();
         }
         public static async Task StartMonitor(Func< Telemetry, int> myMethodName)
         {
@@ -85,7 +115,8 @@ namespace ReadD2cMessages
             MyMethodName = myMethodName;
             System.Diagnostics.Debug.WriteLine("IoT Hub  - Read device to cloud messages. Ctrl-C to exit.\n");
             System.Diagnostics.Debug.WriteLine(".NET 6.0 C# 9.0.\n");
-            Start = ((DateTime)startTime).ToUniversalTime();
+            StartUniversal = ((DateTime)startTime).ToUniversalTime();
+            EndUniversal = ((DateTime)endTime).ToUniversalTime();
             System.Diagnostics.Debug.WriteLine("Do you want to SHOW System and App  Properties sent by IoT Hub? [Y]es Default No");
             System.Diagnostics.Debug.WriteLine("");
 
@@ -136,10 +167,17 @@ namespace ReadD2cMessages
                         data += '}';
            
                     DateTime xx = (DateTime)partitionEvent.Data.SystemProperties["iothub-enqueuedtime"];
-                    System.Diagnostics.Debug.WriteLine("{0} {1}",Start,xx);
-                    if (xx.Ticks < Start.Ticks)
+                    System.Diagnostics.Debug.WriteLine("{0} {1}",StartUniversal,xx);
+                    if (xx.Ticks < StartUniversal.Ticks)
                         continue;
                     Loading = false;
+                    if (appMode == AppMode.fromto)
+                    {
+                        if ((xx.Ticks >= EndUniversal.Ticks))
+                        {
+                            StopMonitor();
+                        }
+                    }
                     System.Diagnostics.Debug.WriteLine($"\nMessage received on partition {partitionEvent.Partition.PartitionId}:");
                     System.Diagnostics.Debug.WriteLine($"\tMessage body: {data}");
                     
@@ -195,6 +233,7 @@ namespace ReadD2cMessages
                 // This is expected when the token is signaled; it should not be considered an
                 // error in this scenario.
                 System.Diagnostics.Debug.WriteLine("Cancelled");
+                appMode = AppMode.loaded;
             }
         }
 

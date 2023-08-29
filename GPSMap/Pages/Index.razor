@@ -54,7 +54,11 @@
 
         @if(!Running)
         {
-            <td><button @onclick="async () =>  {await Runn(true);}">START</button></td>
+            <td><button @onclick="async () => { await Runn(true);}">START</button></td>
+            @if (appMode== ReadD2cMessages.AppMode.loaded)
+            {
+                <td><button @onclick="async () => { await Playy();}">Play</button></td>
+            }
         }
         else
         {
@@ -63,14 +67,14 @@
     </tr>
     <tr>
         <td colspan="4"><b><i>AppMode:&nbsp;</i></b>
-         @(_appMode == 0 ? "No selection yet" : AppModeOptions[_appMode - 1].GenderText)</td>
+         @(IappMode == 0 ? "No selection yet" : AppModeOptions[IappMode - 1].GenderText)</td>
     </tr>
     @if(!Running)
     {
         <tr>
             <td colspan="2">
                 <TelerikRadioGroup Data="@AppModeOptions"
-                                   Value="@_appMode"
+                                   Value="@IappMode"
                                    ValueChanged="@( (int v) => ValueChangedHandler(v) )"
                                    ValueField="@nameof(AppModeModel.GenderId)"
                                    TextField="@nameof(AppModeModel.GenderText)">
@@ -109,7 +113,7 @@
         
         <br />
 
-        <TelerikDateTimePicker  Min="@Min" Max="@Max" @bind-Value="@endTime"
+        <TelerikDateTimePicker  Min="@startTime" Max="@Max" @bind-Value="@endTime"
                                Format="dd MMM yyyy HH:mm:ss" Width="250px"></TelerikDateTimePicker>
     }
 }
@@ -165,6 +169,15 @@
 
 
 @code {
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
+
+    public void ShowAlert(string msg)
+    {
+        Dialogs.AlertAsync(msg).GetAwaiter();
+
+        System.Diagnostics.Debug.WriteLine(msg);
+    }
     DateTime startTime
     {
         get
@@ -173,7 +186,13 @@
         }
         set
         {
-            ReadD2cMessages.GPSCls.startTime = value;
+            if (value.Ticks<endTime.Ticks)
+                ReadD2cMessages.GPSCls.startTime = value;
+            else
+            {
+                if (appMode == ReadD2cMessages.AppMode.fromto)
+                    ShowAlert("Start time needs to be < end time.");
+            }
         }
     }
     DateTime endTime
@@ -184,14 +203,25 @@
         }
         set
         {
-            ReadD2cMessages.GPSCls.startTime = value;
+            if (value.Ticks > startTime.Ticks)
+                ReadD2cMessages.GPSCls.endTime = value;
+            else
+            {
+                ShowAlert("End time needs to be > start time.");
+            }
         }
     }
+
+    async Task Playy()
+    {
+        await ReadD2cMessages.GPSCls.Playy();
+    }
+
     private bool Running { get; set; } = false;
     async Task Runn(bool mode)
     {
         Running = !Running;
-        
+
         StateHasChanged();
         if (Running)
         {
@@ -201,19 +231,23 @@
         {
             StateHasChanged();
             ReadD2cMessages.GPSCls.StopMonitor();
+            StateHasChanged();
         }
     }
 
 
     public DateTime Min = new DateTime(2023, 8, 1, 0, 0, 0);
-    public DateTime Max = new DateTime(2025, 1, 1, 19, 30, 45);
+    public DateTime Max = new DateTime(2025, 1, 1, 0, 0, 0);
 
     TelerikRadioGroup<AppModeModel, int?> RadioGroupRef { get; set; }
 
+    private ReadD2cMessages.AppMode appMode
+    {
+        get { return ReadD2cMessages.GPSCls.appMode; }
+        set { ReadD2cMessages.GPSCls.appMode = value; }
+    }
 
-    private ReadD2cMessages.AppMode appMode { get; set; } = ReadD2cMessages.AppMode.live;
-
-    int _appMode { get; set; } = 0;
+    int IappMode { get; set; } = 0;
 
     List<AppModeModel> AppModeOptions { get; set; } = new List<AppModeModel>
     {
@@ -230,7 +264,7 @@
 
     void ValueChangedHandler(int newValue)
     {
-        _appMode = newValue;
+        IappMode = newValue;
         appMode = (ReadD2cMessages.AppMode)newValue;
         System.Diagnostics.Debug.WriteLine($"New App Mode: {appMode}");
         StateHasChanged();
@@ -281,6 +315,7 @@
     protected override async Task  OnInitializedAsync()
     {
         _zoom = 16;
+        ReadD2cMessages.GPSCls.appMode = ReadD2cMessages.AppMode.none;
         MapIsVisble = true;
         await Delay(100);
     }
