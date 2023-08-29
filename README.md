@@ -67,5 +67,8 @@ If you have [Azure Cli installed](https://learn.microsoft.com/en-us/cli/azure/in
 - Create an azcli prompt and login
 - Run ```az iot hub connection-string show -n <IoT Hub name> --policy-name service --key-type primary```
 - Run ```az iot hub connection-string show -n <IoT Hub name> --default-eventhub```
+
+  <hr/>
+  >Nb: There is now a WorkInProgress Branch which is implementing replay/animation of GPS data.
   
 
