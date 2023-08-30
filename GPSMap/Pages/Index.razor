@@ -40,7 +40,7 @@
     </tr>
     <tr>
         <td align ="right"><b><i>Date:</i></b></td>
-        <td>@TimeStamp.ToShortDateString()</td>
+        <td>@TimeStamp.ToLocalTime().ToShortDateString()</td>
         <td align ="right"><b><i>Time:</i></b></td>
         <td>@TimeStamp.ToShortTimeString()</td>
     </tr>
@@ -73,13 +73,13 @@
         }
     </tr>
     <tr>
-        <td colspan="4"><b><i>AppMode:&nbsp;</i></b>
-         @(IappMode== 0 ? "No selection yet" : AppModeOptions[IappMode - 1].Description)</td>
+        <td align="right"><b><i>AppMode:</i></b></td>
+        <td colspan="3"> @(IappMode== 0 ? "No selection yet" : AppModeOptions[IappMode - 1].Description)</td>
     </tr>
     @if (appInfo.appState == ReadD2cMessages.AppState.none)
     {
         <tr>
-            <td colspan="2">
+            <td colspan="4">
                 <TelerikRadioGroup Data="@AppModeOptions"
                                    Value="@IappMode"
                                    ValueChanged="@( (int v) => ValueChangedHandler(v) )"
@@ -96,6 +96,15 @@
                 <label>Selected start time:</label>@startTime
             </td>
         </tr>
+        <tr>
+            @if (appInfo.appState == ReadD2cMessages.AppState.none)
+            {
+                <td colspan="4">
+                    <TelerikDateTimePicker Min="@Min" Max="@Max" @bind-Value="@startTime"
+                                       Format="dd MMM yyyy HH:mm:ss" Width="250px"></TelerikDateTimePicker>
+            </td>
+            }
+        </tr>
     }
     @if  (appInfo.appMode == ReadD2cMessages.AppMode.fromto)
     {
@@ -104,26 +113,18 @@
                 <label>Selected end time:</label>@endTime
             </td>.
         </tr>
+        <tr >
+            @if (appInfo.appState == ReadD2cMessages.AppState.none)
+            {
+                <td colspan="4">
+                    <TelerikDateTimePicker Min="@startTime" Max="@Max" @bind-Value="@endTime"
+                                       Format="dd MMM yyyy HH:mm:ss" Width="250px"></TelerikDateTimePicker>
+                </td>
+            }
+        </tr>
     }
 </table>
-@if(appInfo.appState ==  ReadD2cMessages.AppState.none)
-{
-    @if ((appInfo.appMode == ReadD2cMessages.AppMode.from)|| (appInfo.appMode == ReadD2cMessages.AppMode.fromto))
-    {
-        <br />
 
-        <TelerikDateTimePicker Min="@Min" Max="@Max" @bind-Value="@startTime"
-                               Format="dd MMM yyyy HH:mm:ss" Width="250px"></TelerikDateTimePicker>
-    }
-    @if (appInfo.appMode == ReadD2cMessages.AppMode.fromto)
-    {
-        
-        <br />
-
-        <TelerikDateTimePicker  Min="@startTime" Max="@Max" @bind-Value="@endTime"
-                               Format="dd MMM yyyy HH:mm:ss" Width="250px"></TelerikDateTimePicker>
-    }
-}
     <br />
 
 
