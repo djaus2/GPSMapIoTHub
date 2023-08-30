@@ -49,15 +49,22 @@
         <td colspan="3"><TelerikTextBox @bind-Value="@Command" Placeholder="Start,Stop,Reset,Set-Period" /></td>
     </tr>
     <tr>
-        <td><button @onclick="() => {zoom++;}">&nbsp;&nbsp;&nbsp+&nbsp;&nbsp;&nbsp</button></td>
-        <td><button @onclick="() => {zoom--;}">&nbsp;&nbsp;&nbsp;--&nbsp;&nbsp;&nbsp;</button></td>
-
-        @if(!Running)
+        @if ( (appInfo.appState != ReadD2cMessages.AppState.running) && (appInfo.appState != ReadD2cMessages.AppState.loading))
         {
-            <td><button @onclick="async () => { await Runn(true);}">START</button></td>
-            @if (appMode== ReadD2cMessages.AppMode.loaded)
+            @if (appInfo.appState != ReadD2cMessages.AppState.playing)
             {
-                <td><button @onclick="async () => { await Playy();}">Play</button></td>
+                <td><button @onclick="async () => { await Runn(true);}">START</button></td>
+            }
+            @if (appInfo.dataState == ReadD2cMessages.DataState.loaded)
+            {
+                @if (appInfo.appState != ReadD2cMessages.AppState.playing)
+                {
+                    <td><button @onclick="async () => { await Playy(true);}">PLAY</button></td>
+                }
+                else
+                {
+                    <td><button @onclick="async () => { await Playy(false);}">STOP</button></td>
+                }   
             }
         }
         else
@@ -67,9 +74,9 @@
     </tr>
     <tr>
         <td colspan="4"><b><i>AppMode:&nbsp;</i></b>
-         @(IappMode == 0 ? "No selection yet" : AppModeOptions[IappMode - 1].GenderText)</td>
+         @(IappMode== 0 ? "No selection yet" : AppModeOptions[IappMode - 1].Description)</td>
     </tr>
-    @if(!Running)
+    @if (appInfo.appState == ReadD2cMessages.AppState.none)
     {
         <tr>
             <td colspan="2">
@@ -77,12 +84,12 @@
                                    Value="@IappMode"
                                    ValueChanged="@( (int v) => ValueChangedHandler(v) )"
                                    ValueField="@nameof(AppModeModel.GenderId)"
-                                   TextField="@nameof(AppModeModel.GenderText)">
+                                   TextField="@nameof(AppModeModel.Description)">
                 </TelerikRadioGroup>
             </td>
         </tr>
     }
-    @if ((appMode == ReadD2cMessages.AppMode.from)|| (appMode == ReadD2cMessages.AppMode.fromto))
+    @if ((appInfo.appMode == ReadD2cMessages.AppMode.from)|| (appInfo.appMode == ReadD2cMessages.AppMode.fromto))
     {
         <tr>
             <td colspan="4">
@@ -90,25 +97,25 @@
             </td>
         </tr>
     }
-    @if  (appMode == ReadD2cMessages.AppMode.fromto)
+    @if  (appInfo.appMode == ReadD2cMessages.AppMode.fromto)
     {
         <tr>
             <td colspan="4">
                 <label>Selected end time:</label>@endTime
-            </td>
+            </td>.
         </tr>
     }
 </table>
-@if(!Running)
+@if(appInfo.appState ==  ReadD2cMessages.AppState.none)
 {
-    @if ((appMode == ReadD2cMessages.AppMode.from)|| (appMode == ReadD2cMessages.AppMode.fromto))
+    @if ((appInfo.appMode == ReadD2cMessages.AppMode.from)|| (appInfo.appMode == ReadD2cMessages.AppMode.fromto))
     {
         <br />
 
         <TelerikDateTimePicker Min="@Min" Max="@Max" @bind-Value="@startTime"
                                Format="dd MMM yyyy HH:mm:ss" Width="250px"></TelerikDateTimePicker>
     }
-    @if (appMode == ReadD2cMessages.AppMode.fromto)
+    @if (appInfo.appMode == ReadD2cMessages.AppMode.fromto)
     {
         
         <br />
@@ -120,7 +127,7 @@
     <br />
 
 
-@if (Loading)
+@if(appInfo.appState== ReadD2cMessages.AppState.loading)
 {
     <p><em>Loading...</em></p>
     <Pulse />
@@ -129,6 +136,10 @@
 
 @if (MapIsVisble)
 {
+    <tr>
+        <td><button @onclick="() => {zoom++;}">&nbsp;&nbsp;&nbsp+&nbsp;&nbsp;&nbsp</button></td>
+        <td><button @onclick="() => {zoom--;}">&nbsp;&nbsp;&nbsp;--&nbsp;&nbsp;&nbsp;</button></td>
+    </tr>
 <TelerikMap Center="@Center"
             MinZoom="3"
             OnClick="@OnMapZoom"
@@ -190,7 +201,7 @@
                 ReadD2cMessages.GPSCls.startTime = value;
             else
             {
-                if (appMode == ReadD2cMessages.AppMode.fromto)
+                if(appInfo.appMode == ReadD2cMessages.AppMode.fromto)
                     ShowAlert("Start time needs to be < end time.");
             }
         }
@@ -212,26 +223,46 @@
         }
     }
 
-    async Task Playy()
+    async Task Playy(bool playMode)
     {
-        await ReadD2cMessages.GPSCls.Playy();
-    }
-
-    private bool Running { get; set; } = false;
-    async Task Runn(bool mode)
-    {
-        Running = !Running;
-
-        StateHasChanged();
-        if (Running)
+        if (appInfo.dataState != ReadD2cMessages.DataState.loaded)
+            return;
+        if (playMode)
         {
-            await ReadD2cMessages.GPSCls.StartMonitor(SetCoords);
+            if (appInfo.appState == ReadD2cMessages.AppState.none)
+            {
+                await ReadD2cMessages.GPSCls.Playy(true);
+            }
         }
         else
         {
-            StateHasChanged();
-            ReadD2cMessages.GPSCls.StopMonitor();
-            StateHasChanged();
+            if (appInfo.appState == ReadD2cMessages.AppState.playing)
+            {
+                await ReadD2cMessages.GPSCls.Playy(false);
+            }
+        }
+    }
+
+
+
+
+    async Task Runn(bool runMode)
+    {
+        if (runMode)
+        {
+            if (appInfo.appState == ReadD2cMessages.AppState.none)
+            {
+                await ReadD2cMessages.GPSCls.StartMonitor(SetCoords);
+            }
+        }
+        else
+        { 
+            if ((appInfo.appState == ReadD2cMessages.AppState.running) || (appInfo.appState == ReadD2cMessages.AppState.loading))
+            {
+                StateHasChanged();
+                ReadD2cMessages.GPSCls.StopMonitor();
+                StateHasChanged();
+            }
         }
     }
 
@@ -241,36 +272,36 @@
 
     TelerikRadioGroup<AppModeModel, int?> RadioGroupRef { get; set; }
 
-    private ReadD2cMessages.AppMode appMode
+    private ReadD2cMessages.AppInfo appInfo
     {
-        get { return ReadD2cMessages.GPSCls.appMode; }
-        set { ReadD2cMessages.GPSCls.appMode = value; }
+        get { return ReadD2cMessages.GPSCls.appInfo; }
+        set { ReadD2cMessages.GPSCls.appInfo = value; }
     }
 
     int IappMode { get; set; } = 0;
 
     List<AppModeModel> AppModeOptions { get; set; } = new List<AppModeModel>
     {
-        new AppModeModel { GenderId = 1, GenderText = "Live" },
-        new AppModeModel { GenderId = 2, GenderText = "Previous From to Live" },
-        new AppModeModel { GenderId = 3, GenderText = "Previous From - To" },
+        new AppModeModel { GenderId = 1, Description = "Live" },
+        new AppModeModel { GenderId = 2, Description = "Previous From to Live" },
+        new AppModeModel { GenderId = 3, Description = "Previous From - To" },
     };
 
     public class AppModeModel
     {
         public int GenderId { get; set; }
-        public string GenderText { get; set; } = "";
+        public string Description { get; set; } = "";
     }
 
     void ValueChangedHandler(int newValue)
     {
         IappMode = newValue;
-        appMode = (ReadD2cMessages.AppMode)newValue;
-        System.Diagnostics.Debug.WriteLine($"New App Mode: {appMode}");
+        appInfo.appMode = (ReadD2cMessages.AppMode)newValue;
+        System.Diagnostics.Debug.WriteLine($"New App Mode: {appInfo.appMode}");
         StateHasChanged();
     }
 
-    public bool Loading { get { return ReadD2cMessages.GPSCls.Loading; } }
+    //public bool Loading { get { return ReadD2cMessages.GPSCls.Loading; } }
     private const int lat = 0;
     private const int lon = 1;
     private string Command = "";
@@ -315,7 +346,7 @@
     protected override async Task  OnInitializedAsync()
     {
         _zoom = 16;
-        ReadD2cMessages.GPSCls.appMode = ReadD2cMessages.AppMode.none;
+        ReadD2cMessages.GPSCls.appInfo = new ReadD2cMessages.AppInfo();
         MapIsVisble = true;
         await Delay(100);
     }

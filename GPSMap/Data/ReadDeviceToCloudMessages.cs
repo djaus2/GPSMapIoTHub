@@ -22,7 +22,46 @@ using Azure.Core;
 
 namespace ReadD2cMessages
 {
-    public enum AppMode { live=1, from=2, fromto=3, play=4,loaded = 5, none=0 }
+    public enum AppMode { none, live, from, fromto, running }
+    public enum DataState {  none, loaded }
+
+    public enum AppState { none, loading, running, playing, tunningpaused, playingpaused}
+
+    public class AppInfo
+    {
+        public AppMode appMode { get; set; } = AppMode.none;
+        public DataState dataState { get; set; } = DataState.none;
+        public AppState appState { get; set; } = AppState.none;
+
+        public void Set(AppMode appmode) {appMode =appmode; }
+        public void Set(DataState datastate) { dataState = datastate; }
+        public void Set(AppState appstate) { appState = appstate; }
+
+        public void Set(AppMode appmode, DataState datastate) 
+        { 
+            appMode = appmode;
+            dataState = datastate;
+        }
+
+        public void Set(AppMode appmode,  AppState appstate)
+        {
+            appMode = appmode;
+            appState = appstate;
+        }
+
+        public void Set( DataState datastate, AppState appstate)
+        {
+            dataState = datastate;
+            appState = appstate;
+        }
+        public void Set(AppMode appmode, DataState datastate, AppState appstate)
+        {
+            appMode = appmode;
+            dataState = datastate;
+            appState = appstate;
+        }
+
+    }
 
     public class Telemetry: Geolocation
     {
@@ -51,12 +90,12 @@ namespace ReadD2cMessages
     /// </summary>
     public class GPSCls
     {
-        public static AppMode appMode { get; set; } = AppMode.none;
+        public static AppInfo appInfo { get; set; } = new AppInfo();
         public static DateTime startTime = DateTime.Now;
         public static DateTime endTime = DateTime.Now;
 
         public static List<Telemetry> telemetrys { get; set;} = new List<Telemetry>();
-        public static bool Loading { get; set; } = false;
+
         private static readonly IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         static bool showProperties = true;
         static Func<Telemetry, int>? MyMethodName = null;
@@ -75,33 +114,46 @@ namespace ReadD2cMessages
             await Task.Delay(del);
         }
 
-        public static async Task Playy()
+        public static async Task Playy(bool playMode)
         {
-            
-            if ((MyMethodName != null) &&(telemetrys.Count() !=0))
+            if (appInfo.dataState == DataState.loaded)
             {
-                appMode = AppMode.play;
-                int count = telemetrys.Count();
-                for (int i=0; i< count; i++) 
+                if (playMode)
                 {
-
-                    int res = ((Func<Telemetry, int>)MyMethodName)(telemetrys[i]);
-                    if (i < (count - 1))
+                    if ((MyMethodName != null) && (telemetrys.Count() != 0))
                     {
-                        TimeSpan span = telemetrys[i + 1].TimeStamp.Subtract(
-                            telemetrys[i ].TimeStamp);
+                        appInfo.appState = AppState.playing;
+                        int count = telemetrys.Count();
+                        for (int i = 0; i < count; i++)
+                        {
+                            if (appInfo.appState != AppState.playing)
+                                break;
+                            int res = ((Func<Telemetry, int>)MyMethodName)(telemetrys[i]);
+                            if (i < (count - 1))
+                            {
+                                TimeSpan span = telemetrys[i + 1].TimeStamp.Subtract(
+                                    telemetrys[i].TimeStamp);
 
-                        await Delay(span.Milliseconds);
+                                await Delay(span.Milliseconds);
+                            }
+                        }
+                        appInfo.Set(AppState.none);
                     }
-                    appMode = AppMode.loaded;
-                    
+                    else
+                    {
+
+                    }
+                }
+                else
+                {
+                    //Use this to break the loop
+                    appInfo.Set(AppState.none);
                 }
             }
             else
             {
-
+                appInfo.Set(AppState.none);
             }
-            
         }
 
         public static void StopMonitor()
@@ -110,7 +162,7 @@ namespace ReadD2cMessages
         }
         public static async Task StartMonitor(Func< Telemetry, int> myMethodName)
         {
-            Loading = true;
+            appInfo.Set(DataState.none, AppState.loading);
             telemetrys = new List<Telemetry>();
             MyMethodName = myMethodName;
             System.Diagnostics.Debug.WriteLine("IoT Hub  - Read device to cloud messages. Ctrl-C to exit.\n");
@@ -170,8 +222,8 @@ namespace ReadD2cMessages
                     System.Diagnostics.Debug.WriteLine("{0} {1}",StartUniversal,xx);
                     if (xx.Ticks < StartUniversal.Ticks)
                         continue;
-                    Loading = false;
-                    if (appMode == AppMode.fromto)
+                    appInfo.Set(DataState.loaded);
+                    if (appInfo.appMode == AppMode.fromto)
                     {
                         if ((xx.Ticks >= EndUniversal.Ticks))
                         {
@@ -233,7 +285,7 @@ namespace ReadD2cMessages
                 // This is expected when the token is signaled; it should not be considered an
                 // error in this scenario.
                 System.Diagnostics.Debug.WriteLine("Cancelled");
-                appMode = AppMode.loaded;
+                appInfo.Set(AppState.none);
             }
         }
 
