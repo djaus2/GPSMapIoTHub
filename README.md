@@ -4,10 +4,12 @@ A Blazor Server app to monitor an Azure IoT Hub and  map the GPS coordinatess se
 Uses Telerik Map Component.
 
 <hr/>
+
 - Just did a drive by locally and the recring worked fine. :)
 - Can jumper GP12/13 for selecting between two wifis and whether or not to use Serial
   - Have dev WiFi and my phone wifi for when mobile
   - If serial enabled, it blocks if no serial
+
 <hr/>
 
 
