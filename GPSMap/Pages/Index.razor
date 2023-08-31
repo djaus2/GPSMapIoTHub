@@ -42,10 +42,10 @@
         <td align ="right"><b><i>Date:</i></b></td>
         <td>@TimeStamp.ToLocalTime().ToShortDateString()</td>
         <td align ="right"><b><i>Time:</i></b></td>
-        <td>@TimeStamp.ToShortTimeString()</td>
+        <td>@TimeStamp.ToLocalTime().ToShortTimeString()</td>
     </tr>
     <tr>
-        <td><button @onclick=@SendCommand>Send</button></td>
+        <td><button @onclick=@SendCommand>Send CD Msg</button></td>
         <td colspan="3"><TelerikTextBox @bind-Value="@Command" Placeholder="Start,Stop,Reset,Set-Period" /></td>
     </tr>
     <tr>
@@ -53,23 +53,23 @@
         {
             @if (appInfo.appState != ReadD2cMessages.AppState.playing)
             {
-                <td><button @onclick="async () => { await Runn(true);}">START</button></td>
+                <td><button @onclick="async () => { await Runn(true);}">START Get DC Telem</button></td>
             }
             @if (appInfo.dataState == ReadD2cMessages.DataState.loaded)
             {
                 @if (appInfo.appState != ReadD2cMessages.AppState.playing)
                 {
-                    <td><button @onclick="async () => { await Playy(true);}">PLAY</button></td>
+                    <td><button @onclick="async () => { await Playy(true);}">REPLAY</button></td>
                 }
                 else
                 {
-                    <td><button @onclick="async () => { await Playy(false);}">STOP</button></td>
+                    <td><button @onclick="async () => { await Playy(false);}">STOP Replay</button></td>
                 }   
             }
         }
         else
         {
-            <td><button @onclick="async () => {await Runn(false);}">STOP</button></td>
+            <td><button @onclick="async () => {await Runn(false);}">STOP Get DC Telem</button></td>
         }
     </tr>
     <tr>
@@ -519,12 +519,19 @@
             StateHasChanged();
         }
         //Loading = false and Running=true here
-        double[] coords = new double[] { telem.lat, telem.lon };
-        TimeStamp = telem.TimeStamp;
-        Center = coords;
-        MarkerDataGPSPoint[0].LatLng = Center;
-        MarkerDataGPSPoint[0].Address = $"{MarkerDataGPSPoint[0].LatLng[0]},{MarkerDataGPSPoint[0].LatLng[1]}";
-
+        if(! (telem.lat + telem.lon + telem.alt == 0))
+        {
+            double[] coords = new double[] { telem.lat, telem.lon };
+            TimeStamp = telem.TimeStamp;
+            Center = coords;
+            MarkerDataGPSPoint[0].LatLng = Center;
+            MarkerDataGPSPoint[0].Address = $"{MarkerDataGPSPoint[0].LatLng[0]},{MarkerDataGPSPoint[0].LatLng[1]}";
+        }
+        else
+        {
+            // lat + lon +alt = 0 is signal that the recv dc msgs wasst opped.
+            // Need to refresh
+        }
         StateHasChanged();
         return 0;
     }

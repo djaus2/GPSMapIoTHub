@@ -98,9 +98,14 @@ BME280I2C bme(settings);
 #define NTP_SERVERS "pool.ntp.org", "time.nist.gov"
 #define MQTT_PACKET_SIZE 1024
 
+static bool SerialConnected =false;
+
 // Translate iot_configs.h defines into variables used by the sample
 static const char* ssid = IOT_CONFIG_WIFI_SSID;
 static const char* password = IOT_CONFIG_WIFI_PASSWORD;
+static const char* ssid_mobile = IOT_CONFIG_WIFI_SSID_MOBILE;
+static const char* password_mobile = IOT_CONFIG_WIFI_PASSWORD_MOBILE;
+static bool useMobile = false;
 static const char* host = IOT_CONFIG_IOTHUB_FQDN;
 static const char* device_id = IOT_CONFIG_DEVICE_ID;
 static const char* device_key = IOT_CONFIG_DEVICE_KEY;
@@ -131,13 +136,28 @@ static void connectToWiFi()
     while(!Serial){}
      Serial.println();
      Serial.print("Connecting to WIFI SSID ");
-     Serial.println(ssid);
+      if(useMobile)
+      {
+        Serial.println(ssid);
+      }
+      else
+      {
+        Serial.println(ssid_mobile);
+      }
   }
   else
     delay(2000);
+  if(useMobile)
+  {
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+  }
+  else
+  {
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid_mobile, password_mobile);
+  }
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
@@ -391,9 +411,33 @@ static void sendTelemetry(String json)
 }
 
 
+void SetupIO()
+{
+  pinMode(SERIAL_MODE_PIN,INPUT);
+  if (digitalRead(SERIAL_MODE_PIN)==HIGH)
+  {
+    SerialConnected=true;
+  }
+  else
+  {
+    SerialConnected = false;
+  }
+  pinMode(WIFI_SRC_PIN,INPUT);
+  if (digitalRead(WIFI_SRC_PIN)==HIGH)
+  {
+    useMobile = false;
+  }
+  else
+  {
+    useMobile = true;
+  }
+}
+
+
 
 void setup()
 {
+  SetupIO();
   if(SerialConnected) 
   {
     Serial.begin(115200);
@@ -614,11 +658,12 @@ String result="";
 void GetGPS()
 { 
   bool gotGPGGA = false;
-  while ((!gotGPGGA) && (TelemetryRunning))
+  String json = "";
+  while ((!gotGPGGA) && (TelemetryRunning) &&(json.indexOf("Error")<0))
   {
     result ="";
     String location = "";
-    String json = "";
+    json ="";
     bool done =false;
     bool starting=true;
     if ((Serial2.available()) && (TelemetryRunning))

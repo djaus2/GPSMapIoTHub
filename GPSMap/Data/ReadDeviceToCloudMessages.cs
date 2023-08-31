@@ -286,6 +286,8 @@ namespace ReadD2cMessages
                 // error in this scenario.
                 System.Diagnostics.Debug.WriteLine("Cancelled");
                 appInfo.Set(AppState.none);
+                Telemetry telem = new Telemetry { lat=0,lon=0, alt=0 };
+                int res = ((Func<Telemetry, int>)MyMethodName)(telem);
             }
         }
 
