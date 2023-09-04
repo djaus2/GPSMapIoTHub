@@ -29,36 +29,74 @@ namespace ReadD2cMessages
 
     public class AppInfo
     {
+        public AppInfo()
+        {
+            StartTime = DateTime.Now;
+        }
+        public DateTime StartTime { get; set; } = DateTime.Now;
         public AppMode appMode { get; set; } = AppMode.none;
         public DataState dataState { get; set; } = DataState.none;
         public AppState appState { get; set; } = AppState.none;
 
         public void Set(AppMode appmode) {appMode =appmode; }
-        public void Set(DataState datastate) { dataState = datastate; }
+        public void Set(DataState datastate) { 
+            dataState = datastate;
+            if (dataState == DataState.loaded)
+            {
+                if (appState == AppState.loading)
+                    if (appMode == AppMode.live)
+                        appState = AppState.running;
+            }
+        }
         public void Set(AppState appstate) { appState = appstate; }
 
         public void Set(AppMode appmode, DataState datastate) 
         { 
             appMode = appmode;
             dataState = datastate;
+            if (dataState == DataState.loaded)
+            {
+                if (appState == AppState.loading)
+                    if (appMode == AppMode.live)
+                        appState = AppState.running;
+            }
         }
 
         public void Set(AppMode appmode,  AppState appstate)
         {
             appMode = appmode;
             appState = appstate;
+            if (dataState == DataState.loaded)
+            {
+                if (appState == AppState.loading)
+                    if (appMode == AppMode.live)
+                        appState = AppState.running;
+            }
         }
 
         public void Set( DataState datastate, AppState appstate)
         {
             dataState = datastate;
             appState = appstate;
+            if (dataState== DataState.loaded)
+            {
+                if (appState == AppState.loading)
+                    if (appMode == AppMode.live)
+                        appState = AppState.running;
+             }
+          
         }
         public void Set(AppMode appmode, DataState datastate, AppState appstate)
         {
             appMode = appmode;
             dataState = datastate;
             appState = appstate;
+            if (dataState == DataState.loaded)
+            {
+                if (appState == AppState.loading)
+                    if (appMode == AppMode.live)
+                        appState = AppState.running;
+            }
         }
 
     }
@@ -91,6 +129,7 @@ namespace ReadD2cMessages
     public class GPSCls
     {
         public static AppInfo appInfo { get; set; } = new AppInfo();
+        
         public static DateTime startTime = DateTime.Now;
         public static DateTime endTime = DateTime.Now;
 

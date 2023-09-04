@@ -128,7 +128,7 @@
     <br />
 
 
-@if(appInfo.appState== ReadD2cMessages.AppState.loading)
+@if(HideLoading)
 {
     <p><em>Loading...</em></p>
     <Pulse />
@@ -183,6 +183,8 @@
 @code {
     [CascadingParameter]
     public DialogFactory Dialogs { get; set; }
+
+    bool HideLoading { get; set; } = true;
 
     public void ShowAlert(string msg)
     {
@@ -519,6 +521,7 @@
             StateHasChanged();
         }
         //Loading = false and Running=true here
+
         if(! (telem.lat + telem.lon + telem.alt == 0))
         {
             double[] coords = new double[] { telem.lat, telem.lon };
@@ -526,6 +529,23 @@
             Center = coords;
             MarkerDataGPSPoint[0].LatLng = Center;
             MarkerDataGPSPoint[0].Address = $"{MarkerDataGPSPoint[0].LatLng[0]},{MarkerDataGPSPoint[0].LatLng[1]}";
+            if (appInfo != null)
+            {
+                System.Diagnostics.Debug.WriteLine(appInfo.appMode);
+                System.Diagnostics.Debug.WriteLine(appInfo.dataState);
+                System.Diagnostics.Debug.WriteLine(appInfo.appState);
+            }
+            if (ReadD2cMessages.GPSCls.appInfo.StartTime.Ticks <= TimeStamp.Ticks)
+            {
+                if (ReadD2cMessages.GPSCls.appInfo.appMode == ReadD2cMessages.AppMode.live)
+                {
+                    HideLoading = true; 
+                }
+                else
+                {
+                    HideLoading = false;
+                }
+            }
         }
         else
         {

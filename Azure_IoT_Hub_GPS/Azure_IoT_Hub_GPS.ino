@@ -99,6 +99,8 @@ BME280I2C bme(settings);
 #define MQTT_PACKET_SIZE 1024
 
 static bool SerialConnected =false;
+static bool BluetoothConnected = false;
+#include <SerialBT.h>
 
 // Translate iot_configs.h defines into variables used by the sample
 static const char* ssid = IOT_CONFIG_WIFI_SSID;
@@ -121,6 +123,7 @@ static uint8_t signature[512];
 static unsigned char encrypted_signature[32];
 static char base64_decoded_device_key[32];
 static bool startingTelemetryGap = true;
+static bool TelemetryRunning = true;
 static unsigned long next_telemetry_send_time_ms = 0;
 static unsigned long next_telemetry_send_gap_time_ms = TELEMETRY_FREQUENCY_MILLISECS_GAP_START;
 static char telemetry_topic[128];
@@ -145,6 +148,20 @@ static void connectToWiFi()
         Serial.println(ssid_mobile);
       }
   }
+  else if (BluetoothConnected)
+  {
+    while(!SerialBT){}
+     SerialBT.println();
+     SerialBT.print("Connecting to WIFI SSID ");
+      if(useMobile)
+      {
+        SerialBT.println(ssid);
+      }
+      else
+      {
+        SerialBT.println(ssid_mobile);
+      }
+  }
   else
     delay(2000);
   if(useMobile)
@@ -162,15 +179,25 @@ static void connectToWiFi()
   {
     delay(500);
      if(SerialConnected) Serial.print(".");
+       else if (BluetoothConnected) SerialBT.print(".");
   }
 
-   if(SerialConnected) Serial.print("WiFi connected, IP address: ");
-   if(SerialConnected) Serial.println(WiFi.localIP());
+  if(SerialConnected) 
+  {
+    Serial.print("WiFi connected, IP address: ");
+    Serial.println(WiFi.localIP());
+  }
+  else if (BluetoothConnected)
+  {
+    SerialBT.print("WiFi connected, IP address: ");
+    SerialBT.println(WiFi.localIP());
+  }
 }
 
 static void initializeTime()
 {
    if(SerialConnected) Serial.print("Setting time using SNTP");
+     else if (BluetoothConnected) SerialBT.print("Setting time using SNTP");
 
   configTime(-5 * 3600, 0, "pool.ntp.org","time.nist.gov"); 
 
@@ -179,9 +206,11 @@ static void initializeTime()
   {
     delay(500);
      if(SerialConnected) Serial.print(".");
+       else if (BluetoothConnected) SerialBT.print(".");
     now = time(NULL);
   }
    if(SerialConnected) Serial.println("done!");
+     else if (BluetoothConnected) SerialBT.println("done!");
 }
 
 static char* getCurrentLocalTimeString()
@@ -192,8 +221,16 @@ static char* getCurrentLocalTimeString()
 
 static void printCurrentTime()
 {
-   if(SerialConnected) Serial.print("Current time: ");
-   if(SerialConnected) Serial.print(getCurrentLocalTimeString());
+   if(SerialConnected) 
+   {
+      Serial.print("Current time: ");
+      Serial.print(getCurrentLocalTimeString());
+   }
+    else if (BluetoothConnected)
+    {
+      SerialBT.print("Current time: ");
+      SerialBT.print(getCurrentLocalTimeString());    
+    }
 }
 
 
@@ -210,6 +247,7 @@ static void initializeClients()
           &options)))
   {
      if(SerialConnected) Serial.println("Failed initializing Azure IoT Hub client");
+       else if (BluetoothConnected) SerialBT.println("Failed initializing Azure IoT Hub client");
     return;
   }
 
@@ -237,6 +275,7 @@ static int generateSasToken(char* sas_token, size_t size)
           &client, expiration, signature_span, &out_signature_span)))
   {
      if(SerialConnected) Serial.println("Failed getting SAS signature");
+       else if (BluetoothConnected)
     return 1;
   }
 
@@ -247,6 +286,7 @@ static int generateSasToken(char* sas_token, size_t size)
   if (base64_decoded_device_key_length == 0)
   {
      if(SerialConnected) Serial.println("Failed base64 decoding device key");
+       else if (BluetoothConnected) SerialBT.println("Failed base64 decoding device key");
     return 1;
   }
 
@@ -277,6 +317,7 @@ static int generateSasToken(char* sas_token, size_t size)
           NULL)))
   {
      if(SerialConnected) Serial.println("Failed getting SAS token");
+       else if (BluetoothConnected) SerialBT.println("Failed getting SAS token");
     return 1;
   }
 
@@ -291,6 +332,7 @@ static int connectToAzureIoTHub()
           &client, mqtt_client_id, sizeof(mqtt_client_id) - 1, &client_id_length)))
   {
      if(SerialConnected) Serial.println("Failed getting client id");
+       else if (BluetoothConnected) SerialBT.println("Failed getting client id");
     return 1;
   }
 
@@ -304,12 +346,23 @@ static int connectToAzureIoTHub()
     printf("Failed to get MQTT clientId, return code\n");
     return 1;
   }
+  if (SerialConnected)
+  {
+    Serial.print("Client ID: ");
+    Serial.println(mqtt_client_id);
 
-   if(SerialConnected) Serial.print("Client ID: ");
-   if(SerialConnected) Serial.println(mqtt_client_id);
+    Serial.print("Username: ");
+    Serial.println(mqtt_username);
+  }
+  else if (BluetoothConnected)
+  {
+    SerialBT.print("Client ID: ");
+    SerialBT.println(mqtt_client_id);
 
-   if(SerialConnected) Serial.print("Username: ");
-   if(SerialConnected) Serial.println(mqtt_username);
+    SerialBT.print("Username: ");
+    SerialBT.println(mqtt_username);
+  }
+
 
   mqtt_client.setBufferSize(MQTT_PACKET_SIZE);
 
@@ -318,17 +371,29 @@ static int connectToAzureIoTHub()
     time_t now = time(NULL);
 
      if(SerialConnected) Serial.print("MQTT connecting ... ");
+       else if (BluetoothConnected) SerialBT.print("MQTT connecting ... ");
 
     if (mqtt_client.connect(mqtt_client_id, mqtt_username, sas_token))
     {
        if(SerialConnected) Serial.println("connected.");
+         else if (BluetoothConnected) SerialBT.println("connected.");
     }
     else
     {
-       if(SerialConnected) Serial.print("failed, status code =");
-       if(SerialConnected) Serial.print(mqtt_client.state());
-       if(SerialConnected) Serial.println(". Trying again in 5 seconds.");
-      // Wait 5 seconds before retrying
+
+       if(SerialConnected) 
+      {
+        Serial.print("failed, status code =");
+        Serial.print(mqtt_client.state());
+        Serial.println(". Trying again in 5 seconds.");
+      }
+      else if (BluetoothConnected)
+      {
+        SerialBT.print("failed, status code =");
+        SerialBT.print(mqtt_client.state());
+        SerialBT.println(". Trying again in 5 seconds.");
+      }
+       // Wait 5 seconds before retrying
       delay(5000);
     }
   }
@@ -351,6 +416,7 @@ static void establishConnection()
   if (generateSasToken(sas_token, sizeofarray(sas_token)) != 0)
   {
      if(SerialConnected) Serial.println("Failed generating MQTT password");
+      else if (BluetoothConnected) SerialBT.println("Failed generating MQTT password");
   }
   else
   {
@@ -388,51 +454,87 @@ static void sendTelemetry(String json)
 {
   digitalWrite(LED_BUILTIN, HIGH);
    if(SerialConnected) Serial.print(millis());
+    else if (BluetoothConnected) SerialBT.print(millis());
   
    if(SerialConnected) Serial.println(" RPI Pico (Arduino) Sending telemetry . . . ");
+    else if (BluetoothConnected)  SerialBT.println(" RPI Pico (Arduino) Sending telemetry . . . ");
  
   if (az_result_failed(az_iot_hub_client_telemetry_get_publish_topic(
           &client, NULL, telemetry_topic, sizeof(telemetry_topic), NULL)))
   {
      if(SerialConnected) Serial.println("Failed az_iot_hub_client_telemetry_get_publish_topic");
+      else if (BluetoothConnected) SerialBT.println("Failed az_iot_hub_client_telemetry_get_publish_topic");
     return;
   }
   char *   payload = getTelemetryPayload(json);
   if (strlen(payload)!= 0)
   {
-     if(SerialConnected) Serial.println(payload);
-    mqtt_client.publish(telemetry_topic, payload, false);
-     if(SerialConnected) Serial.println("OK");
+     if(SerialConnected)
+    {
+      Serial.println(payload);
+      mqtt_client.publish(telemetry_topic, payload, false);
+      Serial.println("OK");
+    }
+    else if (BluetoothConnected)
+    {
+      SerialBT.println(payload);
+      mqtt_client.publish(telemetry_topic, payload, false);
+      SerialBT.println("OK");
+    }
+    else
+    {
+     mqtt_client.publish(telemetry_topic, payload, false);
+    }
   }
   else
+  {
      if(SerialConnected) Serial.println(" NOK");
+      else if (BluetoothConnected)  SerialBT.println(" NOK");
+  }
   delay(100);
   digitalWrite(LED_BUILTIN, LOW);
 }
 
-
+// =========================================================
+// Scenarios:  Serial,Wifi and BT Pins(See iot_configs.h)
+// =========================================================
+// All 3 Low:                    No Serial and Mobile WiFi
+// All High:                     Serial and Desktop Wifi
+// Serial and Wifi Lo, BT Hi:    BT and Mobile
+// =========================================================
+// Hint: Connect Serial and WiFi together.
+// =========================================================
 void SetupIO()
 {
   pinMode(SERIAL_MODE_PIN,INPUT);
+  pinMode(SERIALBT_MODE_PIN,INPUT);
   if (digitalRead(SERIAL_MODE_PIN)==HIGH)
   {
     SerialConnected=true;
+    BluetoothConnected = false;
   }
   else
   {
     SerialConnected = false;
+    if (digitalRead(SERIALBT_MODE_PIN)==HIGH)
+    {
+      BluetoothConnected = true;
+    }
+    else
+    {
+      BluetoothConnected = false;
+    }
   }
   pinMode(WIFI_SRC_PIN,INPUT);
   if (digitalRead(WIFI_SRC_PIN)==HIGH)
   {
-    useMobile = false;
+    useMobile = true;
   }
   else
   {
-    useMobile = true;
+    useMobile = false;
   }
 }
-
 
 
 void setup()
@@ -442,6 +544,11 @@ void setup()
   {
     Serial.begin(115200);
     while(!Serial){}	
+  }
+  else if (BluetoothConnected)
+  {
+    SerialBT.begin();
+    while(!SerialBT){}
   }
   else
   {
@@ -496,16 +603,13 @@ void onActivateRelayCommand(String cmdName, JsonVariant jsonValue) {
 #define heightIndex 9
 
 
-bool TelemetryRunning = false;
+
 bool done=false;
 char mode ='a';
 char nmea[128];
 int indx=0;
 void receivedCallback(char* topic, byte* payload, unsigned int length)
 {
-   /*if(SerialConnected) Serial.print("Received [");
-   if(SerialConnected) Serial.print(topic);
-   if(SerialConnected) Serial.print("]: ");*/
   char Payload[length+1]={0};
   char num[20]={0};
   int getParam = 0;
@@ -529,15 +633,21 @@ void receivedCallback(char* topic, byte* payload, unsigned int length)
   }
  
   if(SerialConnected) Serial.print(Payload);
+  else if (BluetoothConnected) SerialBT.print(Payload);
+
   
 
   if (getParam>0)
   {
     param= atoi(num);
     if(SerialConnected) Serial.print(": ");
+      else if (BluetoothConnected) SerialBT.print(": ");
+
     if(SerialConnected) Serial.println(param);
+      else if (BluetoothConnected)  SerialBT.println(param);
   }
   if(SerialConnected) Serial.println();
+    else if (BluetoothConnected) SerialBT.println();
 
   Messages msg = msgtelemetryNone;
 
@@ -574,13 +684,15 @@ void receivedCallback(char* topic, byte* payload, unsigned int length)
       startingTelemetryGap = false;
       break;
     case msgtelemetryNone:
-       if(SerialConnected) Serial.println("None");  
+       if(SerialConnected) Serial.println("None"); 
+         else if (BluetoothConnected) SerialBT.println("None"); 
       break;
   }
 }
 
 #define bufferIndexMax  12
 String strings[bufferIndexMax];
+int bufferIndex = 0;
 
 // string: string to parse
 // c: delimiter
@@ -588,7 +700,7 @@ String strings[bufferIndexMax];
 void split(String string)
 {
   String data = "";
-  int bufferIndex = 0;
+  bufferIndex = 0;
 
   for (int i = 0; i < string.length(); ++i)
   {
@@ -651,114 +763,115 @@ void GPSsetup() {
   delay(1000);
   while(!Serial2){};
    if(SerialConnected) Serial.println("GPS is Setup");
+     else if (BluetoothConnected) SerialBT.println("GPS is Setup");
 }
 
-
+//Only updated when new GPGGA is determined.
 String result="";
 void GetGPS()
 { 
-  bool gotGPGGA = false;
-  String json = "";
-  while ((!gotGPGGA) && (TelemetryRunning) &&(json.indexOf("Error")<0))
+  bool gotGPGGA = false;  // Looking for NMEA GPGGS sentence
+  String json = "";       // Telemetry Json coded msg. Assigned to global result upon return.
+  
+  String NSDir = "";      // N or S character wrt latitude
+  String EWDir = "";      // E or W wrt longitude
+  double lat = -1.0;      // Latitude
+  double lon = -1.0;      // Longitude
+  double alt = -1.0;      // Altitude
+  char ch ='.';           // Debug indicator of how far in GPGGA checking got to. Dot means no GPGGA sentence,
+  int ns=0;               // Number of satellites, needs to be at least 3
+  int qual = 0;           // Quality of GPS. Normally 1. Accept >0
+
+
+  // Loop until valif GPGGA sentence
+  while ((!gotGPGGA) && (TelemetryRunning) )
   {
-    result ="";
-    String location = "";
-    json ="";
-    bool done =false;
-    bool starting=true;
-    if ((Serial2.available()) && (TelemetryRunning))
+    NSDir = "";
+    EWDir = "";
+    String nmea = Serial2.readStringUntil('\n');
+    // Assumes lines not blank, start with $ are terminated with \n then \r  or viz, and don't contain ,,,
+    if (nmea != "")
     {
-      while((!done) && (TelemetryRunning))
+      nmea.replace("\r","");
+      if (nmea != "")
       {
-        while ((!Serial2.available())&& (TelemetryRunning)){}
-        if(!TelemetryRunning)
-          return;
-        char c1 = Serial2.read();
-        if((starting) && (TelemetryRunning))
+        if (nmea[0] == '$')
         {
-          // Wait for start of a NMEA sentence
-          while((c1 != '$' ) && (TelemetryRunning))
+          split(nmea);
+          if (bufferIndex>0)
           {
-            while (!Serial2.available()){ }
-            c1 = Serial2.read();
-          }
-          starting=false;
-          indx=0;
-          done=false;
-          nmea[indx]=c1;
-          indx++;
-          if(TelemetryRunning)
-            continue;
-        }
-        else if (c1=='\n')
-        {
-          if(TelemetryRunning)
-           done = true;
-          break;
-        }
-        else if (c1=='\r')
-        {
-          if(TelemetryRunning)
-            done = true;
-          break;
-        }
-        else
-        {
-          nmea[indx]=c1;
-          indx++;
-          if(indx>128)
-          {
-            if(SerialConnected) Serial.println("Overrun.");
-            if(SerialConnected) Serial.println(nmea);
-            indx=0;
-            done=false;
-            nmea[0]=0;
-            return;
-          }
-          nmea[indx]=0;
-        }
-      } 
-      if (!TelemetryRunning)
-        return;
-      //NB Done is true here if foun
-      if (done)
-      {
-        //Serial.println(nmea);
-        // Expect starting with GP
-        if(nmea[1]=='G')
-        {
-          if(nmea[2]=='P')
-          {
-            // $GPGGA
-            if(nmea[5]=='A')
-            {
-              if(nmea[4]=='G')
+            if (strings[0]=="$GPGGA")
+            { 
+              ch='$';
+              if (!nmea.indexOf(",,,")<0);//An apriori check!
               {
-                if(nmea[3]=='G')
+                ch=',';
+                //Previous GPGGA result
+                result="";
+                if(bufferIndex>12)
                 {
-                  // Telemetry
-                  split(nmea);
-                  json = "{";
-                  json += "\"lat\":";
-                  if(strings[lattIndex+1]=="S")
+                  ch='b';
+                  if ((strings[6] != "")&&(strings[7] != "")) // Quality and Satellites
                   {
-                    json += "-";
+                    ch='n';
+                    if ((qual =strings[6].toInt()) >0 ) //Quality should be 1
+                    {
+                      ch='q';                    
+                      if ((ns = strings[7].toInt() )>2 ) //Number of Satellites.Needs to be 4
+                      {
+                        ch='s';
+                        if ((strings[2] != "")&&(strings[4] != "")&&(strings[9] != ""))
+                        {
+                          ch='d';
+                          if ((lat = strings[2].toDouble()) >0 ) //Lat
+                          {
+                            ch='l';
+                            if ((lon = strings[4].toDouble()) >0 ) //Lon
+                            {
+                              ch='o';
+                              if ((alt = strings[9].toDouble()) >0 ) //Alt
+                              {
+                                ch='a';
+                                NSDir = strings[3];
+                                if ((NSDir=="N" ) || (NSDir=="S" ))
+                                {
+                                  EWDir = strings[5];
+                                  ch='n';
+                                  if ((EWDir=="E" ) || (EWDir=="W" ))
+                                  {
+                                    ch='e';
+                                    gotGPGGA = true;
+
+                                    json = "{";
+                                    json += "\"lat\":";
+                                    if(NSDir=="S")
+                                    {
+                                      json += "-";
+                                    }
+                                    json += ShiftLeft2(strings[lattIndex]);
+                                    json += ",";
+                                    json += "\"lon\":";
+                                    if(EWDir=="W")
+                                    {
+                                      json += "-";
+                                    }
+                                    json += ShiftLeft2(strings[longIndex]);
+                                    json += ",";
+                                    json += "\"alt\":";
+                                    json += strings[heightIndex];
+                                    //json += strings[heightIndex+1];
+                                    json += "}";
+                                    result =  json;
+                                    gotGPGGA= true;
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
                   }
-                  json += ShiftLeft2(strings[lattIndex]);
-                  json += ",";
-                  json += "\"lon\":";
-                  if(strings[longIndex+1]=="W")
-                  {
-                    json += "-";
-                  }
-                  json += ShiftLeft2(strings[longIndex]);
-                  json += ",";
-                  json += "\"alt\":";
-                  json += strings[heightIndex];
-                  //json += strings[heightIndex+1];
-                  json += "}";
-                  result =  json;
-                  gotGPGGA= true;
                 }
               }
             }
@@ -766,9 +879,37 @@ void GetGPS()
         }
       }
     }
+
+    if((!gotGPGGA)&&(ch!='.'))
+    {
+      ///////////////////////////////////////
+      // Failed to get GPGGA so msg info
+      // See above for meanings of ch
+      // qual is quality (should be 1)
+      // sat is number of satellites, min 3
+      ///////////////////////////////////////
+      if(SerialConnected)
+      {
+        Serial.print(ch);
+        Serial.print('-');
+        Serial.print("qual=");
+        Serial.print(qual);
+        Serial.print("sat=");
+        Serial.print(ns);
+        Serial.println("(min 3)");
+      }
+      else if (BluetoothConnected)
+      {
+        SerialBT.print(ch);
+        SerialBT.print('-');
+        SerialBT.print("q=");
+        SerialBT.print(qual);
+        SerialBT.print("sat=");
+        Serial.print(ns);
+        SerialBT.println("(min 3)");
+      }
+    } 
   }
-  //Serial.print("Got: ");
-  //Serial.println(result);
 }
 
 void SetTelemetryGap(int gap, bool * _starting)
@@ -803,10 +944,10 @@ void SetTelemetryGap(int gap, bool * _starting)
 
 void loop()
 {
+  GetGPS();
+  //return;
   if(TelemetryRunning)
   {
-
-    GetGPS();
     if (result.length()> 0)
     {
       String json = result;
@@ -830,12 +971,10 @@ void loop()
         }
       }
     }
-  }
-  else
-  {
-    delay(1000);
-  }
   // MQTT loop must be called to process Device-to-Cloud and Cloud-to-Device.
   mqtt_client.loop();
-  delay(500);
+  //delay(500);
+  }
+
+
 }
