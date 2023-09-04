@@ -778,7 +778,7 @@ void GetGPS()
   double lat = -1.0;      // Latitude
   double lon = -1.0;      // Longitude
   double alt = -1.0;      // Altitude
-  char ch ='.';           // Debug indicator of how far in GPGGA checking got to. Dot means no GPGGA sentence,
+  String debug =".";           // Debug indicator of how far in GPGGA checking got to. Dot means no GPGGA sentence,
   int ns=0;               // Number of satellites, needs to be at least 3
   int qual = 0;           // Quality of GPS. Normally 1. Accept >0
 
@@ -786,6 +786,7 @@ void GetGPS()
   // Loop until valif GPGGA sentence
   while ((!gotGPGGA) && (TelemetryRunning) )
   {
+    debug=".";
     NSDir = "";
     EWDir = "";
     String nmea = Serial2.readStringUntil('\n');
@@ -802,44 +803,44 @@ void GetGPS()
           {
             if (strings[0]=="$GPGGA")
             { 
-              ch='$';
+              debug="1.$GPGGA";
               if (!nmea.indexOf(",,,")<0);//An apriori check!
               {
-                ch=',';
+                debug="2-No ,,,";
                 //Previous GPGGA result
                 result="";
                 if(bufferIndex>12)
                 {
-                  ch='b';
+                  debug="3-BuufIndx";
                   if ((strings[6] != "")&&(strings[7] != "")) // Quality and Satellites
                   {
-                    ch='n';
+                    debug="4-NonBlank QS";
                     if ((qual =strings[6].toInt()) >0 ) //Quality should be 1
                     {
-                      ch='q';                    
-                      if ((ns = strings[7].toInt() )>2 ) //Number of Satellites.Needs to be 4
+                      debug="5-Qual";                    
+                      if ((ns = strings[7].toInt() )>2 ) //Number of Satellites.Needs to be 3
                       {
-                        ch='s';
+                        debug="6-Sats";
                         if ((strings[2] != "")&&(strings[4] != "")&&(strings[9] != ""))
                         {
-                          ch='d';
+                          debug="7-NonNull-Data";
                           if ((lat = strings[2].toDouble()) >0 ) //Lat
                           {
-                            ch='l';
+                            debug="8-LatOK";
                             if ((lon = strings[4].toDouble()) >0 ) //Lon
                             {
-                              ch='o';
+                              debug="9-LonOK";
                               if ((alt = strings[9].toDouble()) >0 ) //Alt
                               {
-                                ch='a';
+                                debug="10-AltOK";
                                 NSDir = strings[3];
                                 if ((NSDir=="N" ) || (NSDir=="S" ))
                                 {
                                   EWDir = strings[5];
-                                  ch='n';
+                                  debug="11-NSOK";
                                   if ((EWDir=="E" ) || (EWDir=="W" ))
                                   {
-                                    ch='e';
+                                    debug="12.AllOK";
                                     gotGPGGA = true;
 
                                     json = "{";
@@ -880,33 +881,36 @@ void GetGPS()
       }
     }
 
-    if((!gotGPGGA)&&(ch!='.'))
+    if((!gotGPGGA)&&(debug!="."))
     {
       ///////////////////////////////////////
       // Failed to get GPGGA so msg info
-      // See above for meanings of ch
+      // See above for meanings of debug
       // qual is quality (should be 1)
       // sat is number of satellites, min 3
       ///////////////////////////////////////
       if(SerialConnected)
       {
-        Serial.print(ch);
+        Serial.print(debug);
         Serial.print('-');
         Serial.print("qual=");
         Serial.print(qual);
-        Serial.print("sat=");
+        Serial.print("(>0) sats=");
         Serial.print(ns);
-        Serial.println("(min 3)");
+        Serial.print("(min 3)");
+        Serial.print("\t\t\t\t");
+        Serial.println(nmea);
       }
       else if (BluetoothConnected)
       {
-        SerialBT.print(ch);
+        SerialBT.print(debug);
         SerialBT.print('-');
-        SerialBT.print("q=");
+        SerialBT.print("Qual=");
         SerialBT.print(qual);
-        SerialBT.print("sat=");
-        Serial.print(ns);
+        SerialBT.print("(>0) Sats=");
+        SerialBT.print(ns);
         SerialBT.println("(min 3)");
+        Serial.println(nmea);
       }
     } 
   }
