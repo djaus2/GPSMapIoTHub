@@ -11,11 +11,11 @@ Uses Telerik Map Component.
 - Can record and playback history
 - Test: Did a drive by locally and the recring worked fine. :)
 - Can jumper GP12/13 for selecting between two wifis and whether or not to use Serial.  Can also select Blutooth, GP11
-  - GP13 _High = Deskyop WiFo , alt Mobile Wifi_
+  - GP13 _High = _Deskyop WiFi , alt Mobile Wifi_
+      - Have dev WiFi and my phone wifi for when mobile
   - GP12 _High = _Serial enabled_
-  - GP11 _High = BT enabled but Serial takes precedence_
-  - Have dev WiFi and my phone wifi for when mobile
-  - If serial enabled, it blocks if no serial connected.
+  - GP11 _High = _BT enabled but Serial takes precedence_
+    - If Serial/BT enabled, it blocks if no Serial/BT connected.
 
 <hr/>
 
@@ -85,7 +85,12 @@ If you have [Azure Cli installed](https://learn.microsoft.com/en-us/cli/azure/in
 - Run ```az iot hub connection-string show -n <IoT Hub name> --policy-name service --key-type primary```
 - Run ```az iot hub connection-string show -n <IoT Hub name> --default-eventhub```
 
-  <hr/>
-  >Nb: There is now a WorkInProgress Branch which is implementing replay/animation of GPS data.
+<hr/>
+  
+## Operational Modes:
+
+- Live: Scan through historical telemetry then map wrt live telemetry
+- Historical: Scan though al previous telemetry (typically a day) then replay in timely manner.
+  - Can set start and end date/time
   
 
