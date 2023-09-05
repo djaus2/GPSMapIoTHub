@@ -16,49 +16,214 @@ using Azure.Messaging.EventHubs.Consumer;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
 using System.Runtime.CompilerServices;
+using Microsoft.Azure.Amqp.Framing;
+using Azure.Core;
 //using CommandLine;
 
 namespace ReadD2cMessages
 {
+    public enum AppMode { none, live, from, fromto, running }
+    public enum DataState {  none, loaded }
+
+    public enum AppState { none, loading, running, playing, tunningpaused, playingpaused}
+
+    public class AppInfo
+    {
+        public AppInfo()
+        {
+            StartTime = DateTime.Now;
+        }
+        public DateTime StartTime { get; set; } = DateTime.Now;
+        public AppMode appMode { get; set; } = AppMode.none;
+        public DataState dataState { get; set; } = DataState.none;
+        public AppState appState { get; set; } = AppState.none;
+
+        public void Set(AppMode appmode) {appMode =appmode; }
+        public void Set(DataState datastate) { 
+            dataState = datastate;
+            if (dataState == DataState.loaded)
+            {
+                if (appState == AppState.loading)
+                    if (appMode == AppMode.live)
+                        appState = AppState.running;
+            }
+        }
+        public void Set(AppState appstate) { appState = appstate; }
+
+        public void Set(AppMode appmode, DataState datastate) 
+        { 
+            appMode = appmode;
+            dataState = datastate;
+            if (dataState == DataState.loaded)
+            {
+                if (appState == AppState.loading)
+                    if (appMode == AppMode.live)
+                        appState = AppState.running;
+            }
+        }
+
+        public void Set(AppMode appmode,  AppState appstate)
+        {
+            appMode = appmode;
+            appState = appstate;
+            if (dataState == DataState.loaded)
+            {
+                if (appState == AppState.loading)
+                    if (appMode == AppMode.live)
+                        appState = AppState.running;
+            }
+        }
+
+        public void Set( DataState datastate, AppState appstate)
+        {
+            dataState = datastate;
+            appState = appstate;
+            if (dataState== DataState.loaded)
+            {
+                if (appState == AppState.loading)
+                    if (appMode == AppMode.live)
+                        appState = AppState.running;
+             }
+          
+        }
+        public void Set(AppMode appmode, DataState datastate, AppState appstate)
+        {
+            appMode = appmode;
+            dataState = datastate;
+            appState = appstate;
+            if (dataState == DataState.loaded)
+            {
+                if (appState == AppState.loading)
+                    if (appMode == AppMode.live)
+                        appState = AppState.running;
+            }
+        }
+
+    }
+
+    public class Telemetry: Geolocation
+    {
+        public DateTime TimeStamp { get; set; }
+
+        public Telemetry() { }
+        public Telemetry(DateTime stamp) { TimeStamp = stamp; }
+        public Telemetry(Geolocation location, DateTime stamp) 
+        { 
+            TimeStamp = stamp;
+            lat = location.lat;
+            lon = location.lon;
+            alt = location.alt;
+        }
+    }
     public class Geolocation
     {
         public double lat { get; set; }
         public double lon { get; set; }
         public double alt { get; set; }
-  
+
     }
 
-    public class Geopoint
-    {
-        public Geolocation location {get; set;}
-    }
     /// <summary>
     /// A sample to illustrate reading Device-to-Cloud messages from a service app.
     /// </summary>
     public class GPSCls
     {
-        public static bool Loading { get; set; } = true;
+        public static AppInfo appInfo { get; set; } = new AppInfo();
+        
+        public static DateTime startTime = DateTime.Now;
+        public static DateTime endTime = DateTime.Now;
+        public static bool HideLoading { get; set; } = true;
+        public static List<Telemetry> telemetrys { get; set;} = new List<Telemetry>();
+
         private static readonly IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
         static bool showProperties = true;
-        static Func<double[], int>? MyMethodName = null;
+        static Func<Telemetry, int>? MyMethodName = null;
         static double lat = 0;
         static double lon = 45;
-        static DateTime Start = DateTime.Now;
-        public static async Task StartMonitor(Func< double[], int> myMethodName)
+        static DateTime StartUniversal = DateTime.Now.ToUniversalTime();
+        static DateTime EndUniversal = DateTime.Now.ToUniversalTime();
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        public static CancellationTokenSource cts;
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        public static CancellationToken token;
+
+        public static async Task Delay(int del)
         {
-            Loading = true;
+            await Task.Delay(del);
+        }
+
+        public static async Task Playy(bool playMode)
+        {
+            if (appInfo.dataState == DataState.loaded)
+            {
+                if (playMode)
+                {
+                    if ((MyMethodName != null) && (telemetrys.Count() != 0))
+                    {
+                        appInfo.appState = AppState.playing;
+                        int count = telemetrys.Count();
+                        for (int i = 0; i < count; i++)
+                        {
+                            if (appInfo.appState != AppState.playing)
+                                break;
+                            int res = ((Func<Telemetry, int>)MyMethodName)(telemetrys[i]);
+                            if (i < (count - 1))
+                            {
+                                TimeSpan span = telemetrys[i + 1].TimeStamp.Subtract(
+                                    telemetrys[i].TimeStamp);
+
+                                await Delay(span.Milliseconds);
+                            }
+                        }
+                        appInfo.Set(AppState.none);
+                        HideLoading = true;
+                    }
+                    else
+                    {
+
+                    }
+                }
+                else
+                {
+                    //Use this to break the loop
+                    appInfo.Set(AppState.none);
+                }
+            }
+            else
+            {
+                appInfo.Set(AppState.none);
+            }
+        }
+
+        public static void StopMonitor()
+        {
+            cts.Cancel();
+        }
+        public static async Task StartMonitor(Func< Telemetry, int> myMethodName)
+        {
+            appInfo.Set(DataState.none, AppState.loading);
+            telemetrys = new List<Telemetry>();
             MyMethodName = myMethodName;
             System.Diagnostics.Debug.WriteLine("IoT Hub  - Read device to cloud messages. Ctrl-C to exit.\n");
             System.Diagnostics.Debug.WriteLine(".NET 6.0 C# 9.0.\n");
-            Start = DateTime.Now.ToUniversalTime();
+            StartUniversal = ((DateTime)startTime).ToUniversalTime();
+            EndUniversal = ((DateTime)endTime).ToUniversalTime();
             System.Diagnostics.Debug.WriteLine("Do you want to SHOW System and App  Properties sent by IoT Hub? [Y]es Default No");
             System.Diagnostics.Debug.WriteLine("");
 
             // Set up a way for the user to gracefully shutdown
-            using var cts = new CancellationTokenSource();
+            if (appInfo.appMode == AppMode.live)
+                cts = new CancellationTokenSource();
+            else
+            {
+                int timeout = config.GetValue<int>("TIMEOUT");
+                cts = new CancellationTokenSource(new TimeSpan(0, 0, timeout));
+            }
+            token = cts.Token;
 
             // Run the sample
-            await ReceiveMessagesFromDeviceAsync(cts.Token);
+            await ReceiveMessagesFromDeviceAsync(token);
 
             System.Diagnostics.Debug.WriteLine("Cloud message reader finished.");
         }
@@ -94,16 +259,41 @@ namespace ReadD2cMessages
                 //   https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/eventhub/Azure.Messaging.EventHubs.Processor/README.md
                 await foreach (PartitionEvent partitionEvent in consumer.ReadEventsAsync(ct))
                 {
-
+                    //if (ct.IsCancellationRequested)
+                    //{
+                    //    if (appInfo.appMode == AppMode.live)
+                    //    {
+                    //        // Just update is loading indication
+                    //        HideLoading = false;
+                    //        Telemetry telem = new Telemetry { lat = 0, lon = 0, alt = 0 };
+                    //        int res = ((Func<Telemetry, int>)MyMethodName)(telem);
+                    //    }
+                    //    else
+                    //        ct.ThrowIfCancellationRequested();
+                    //}
                     string data = Encoding.UTF8.GetString(partitionEvent.Data.Body.ToArray());
                     if (data[data.Length - 1] != '}')
                         data += '}';
            
                     DateTime xx = (DateTime)partitionEvent.Data.SystemProperties["iothub-enqueuedtime"];
-                    System.Diagnostics.Debug.WriteLine("{0} {1}",Start,xx);
-                    if (xx.Ticks < Start.Ticks)
+                    System.Diagnostics.Debug.WriteLine("{0} {1} {2}",StartUniversal,xx, EndUniversal);
+                    if (xx.Ticks < StartUniversal.Ticks)
                         continue;
-                    Loading = false;
+                    appInfo.Set(DataState.loaded);
+                    if (appInfo.appMode == AppMode.fromto)
+                    {
+                        if ((xx.Ticks >= EndUniversal.Ticks))
+                        {
+                            StopMonitor();
+                        }
+                    }
+                    else if (appInfo.appMode == AppMode.from)
+                    {
+                        if ((xx.Ticks >= EndUniversal.Ticks))
+                        {
+                            StopMonitor();
+                        }
+                    }
                     System.Diagnostics.Debug.WriteLine($"\nMessage received on partition {partitionEvent.Partition.PartitionId}:");
                     System.Diagnostics.Debug.WriteLine($"\tMessage body: {data}");
                     
@@ -128,10 +318,14 @@ namespace ReadD2cMessages
                             double lat = location.lat;
                             double lon = location.lon;
                             double alt = location.alt;
+
+                            Telemetry telem = new Telemetry(location, xx);
+                            telemetrys.Add(telem);
   
                             double[] dbl = new double[] { lat, lon };
-                            int res = ((Func<double[], int>)MyMethodName)(dbl);
+                            int res = ((Func<Telemetry, int>)MyMethodName)(telem);
                         }
+                        ct.ThrowIfCancellationRequested();
                     }
 
                     if (showProperties)
@@ -150,10 +344,17 @@ namespace ReadD2cMessages
                     }
                 }
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException ex)
             {
                 // This is expected when the token is signaled; it should not be considered an
                 // error in this scenario.
+                System.Diagnostics.Debug.WriteLine("Cancelled");
+                appInfo.Set(AppState.none);
+                if(appInfo.appMode != AppMode.live)
+                    appInfo.Set(DataState.loaded);
+                HideLoading = false;
+                Telemetry telem = new Telemetry { lat=0,lon=0, alt=0 };
+                int res = ((Func<Telemetry, int>)MyMethodName)(telem);
             }
         }
 
