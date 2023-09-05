@@ -10,7 +10,7 @@ Uses Telerik Map Component.
 - **WorkInProgress** branch has been merged back into Master
 - Much improved **NMEA GPGGA** sentence filter.
 - Can record and playback history
-- Test: Did a drive by locally and the recring worked fine. :)
+- Test: Did a drive by locally and the GPS Mapping worked fine. :)
 - Can jumper GP12/13 for selecting between two wifis and whether or not to use Serial.  Can also select Blutooth, GP11
   - GP13 _High = _Deskyop WiFi , alt Mobile Wifi_
       - Have dev WiFi and my phone wifi for when mobile
