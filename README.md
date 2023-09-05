@@ -3,7 +3,7 @@
 A Blazor Server app to monitor an Azure IoT Hub and  map the GPS coordinatess sent to it  as telemetry.  
 Uses Telerik Map Component.
 
-THIS BRANCH HAS BEEN MERGED BACK INTO MAIL
+**THIS BRANCH HAS BEEN MERGED BACK INTO MAIL**
 
 ![Device Image](https://github.com/djaus2/GPSMapIoTHub/blob/master/GPSMap/wwwroot/images/uart-gps-module-with-real-time-clock.jpg)  
 **_A typical GPS Device, suitable for Arduino use_**
