@@ -132,7 +132,7 @@ namespace ReadD2cMessages
         
         public static DateTime startTime = DateTime.Now;
         public static DateTime endTime = DateTime.Now;
-
+        public static bool HideLoading { get; set; } = true;
         public static List<Telemetry> telemetrys { get; set;} = new List<Telemetry>();
 
         private static readonly IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
@@ -177,6 +177,7 @@ namespace ReadD2cMessages
                             }
                         }
                         appInfo.Set(AppState.none);
+                        HideLoading = true;
                     }
                     else
                     {
@@ -212,7 +213,13 @@ namespace ReadD2cMessages
             System.Diagnostics.Debug.WriteLine("");
 
             // Set up a way for the user to gracefully shutdown
-            cts = new CancellationTokenSource();
+            if (appInfo.appMode == AppMode.live)
+                cts = new CancellationTokenSource();
+            else
+            {
+                int timeout = config.GetValue<int>("TIMEOUT");
+                cts = new CancellationTokenSource(new TimeSpan(0, 0, timeout));
+            }
             token = cts.Token;
 
             // Run the sample
@@ -252,17 +259,35 @@ namespace ReadD2cMessages
                 //   https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/eventhub/Azure.Messaging.EventHubs.Processor/README.md
                 await foreach (PartitionEvent partitionEvent in consumer.ReadEventsAsync(ct))
                 {
-                    ct.ThrowIfCancellationRequested();
+                    //if (ct.IsCancellationRequested)
+                    //{
+                    //    if (appInfo.appMode == AppMode.live)
+                    //    {
+                    //        // Just update is loading indication
+                    //        HideLoading = false;
+                    //        Telemetry telem = new Telemetry { lat = 0, lon = 0, alt = 0 };
+                    //        int res = ((Func<Telemetry, int>)MyMethodName)(telem);
+                    //    }
+                    //    else
+                    //        ct.ThrowIfCancellationRequested();
+                    //}
                     string data = Encoding.UTF8.GetString(partitionEvent.Data.Body.ToArray());
                     if (data[data.Length - 1] != '}')
                         data += '}';
            
                     DateTime xx = (DateTime)partitionEvent.Data.SystemProperties["iothub-enqueuedtime"];
-                    System.Diagnostics.Debug.WriteLine("{0} {1}",StartUniversal,xx);
+                    System.Diagnostics.Debug.WriteLine("{0} {1} {2}",StartUniversal,xx, EndUniversal);
                     if (xx.Ticks < StartUniversal.Ticks)
                         continue;
                     appInfo.Set(DataState.loaded);
                     if (appInfo.appMode == AppMode.fromto)
+                    {
+                        if ((xx.Ticks >= EndUniversal.Ticks))
+                        {
+                            StopMonitor();
+                        }
+                    }
+                    else if (appInfo.appMode == AppMode.from)
                     {
                         if ((xx.Ticks >= EndUniversal.Ticks))
                         {
@@ -319,12 +344,15 @@ namespace ReadD2cMessages
                     }
                 }
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException ex)
             {
                 // This is expected when the token is signaled; it should not be considered an
                 // error in this scenario.
                 System.Diagnostics.Debug.WriteLine("Cancelled");
                 appInfo.Set(AppState.none);
+                if(appInfo.appMode != AppMode.live)
+                    appInfo.Set(DataState.loaded);
+                HideLoading = false;
                 Telemetry telem = new Telemetry { lat=0,lon=0, alt=0 };
                 int res = ((Func<Telemetry, int>)MyMethodName)(telem);
             }

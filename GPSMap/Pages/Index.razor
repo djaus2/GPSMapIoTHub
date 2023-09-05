@@ -53,7 +53,7 @@
         {
             @if (appInfo.appState != ReadD2cMessages.AppState.playing)
             {
-                <td><button @onclick="async () => { await Runn(true);}">START Get DC Telem</button></td>
+                <td><button @onclick="async () => { await Runn(true);}">START</button>&nbsp;Get&nbsp;D2C&nbsp;Telemetry</td>
             }
             @if (appInfo.dataState == ReadD2cMessages.DataState.loaded)
             {
@@ -63,13 +63,13 @@
                 }
                 else
                 {
-                    <td><button @onclick="async () => { await Playy(false);}">STOP Replay</button></td>
+                    <td><button @onclick="async () => { await Playy(false);}">STOP</button>&nbsp;Replay</td>
                 }   
             }
         }
         else
         {
-            <td><button @onclick="async () => {await Runn(false);}">STOP Get DC Telem</button></td>
+            <td><button @onclick="async () => {await Runn(false);}">STOP</button>&nbsp;Get&nbsp;D2C&nbsp;Telemetry</td>
         }
     </tr>
     <tr>
@@ -128,11 +128,19 @@
     <br />
 
 
-@if(HideLoading)
+@if(!HideLoading)
 {
-    <p><em>Loading...</em></p>
-    <Pulse />
-    <p>Note: Reading historic Telemetry then waiting to first send which can be up to 1 minute.</p>
+    @if (appInfo.appState != ReadD2cMessages.AppState.playing)
+    {
+        <p><em>Loading...</em></p>
+        <Pulse />
+        <p><i>Note: Reading historic Telemetry.</i></p>
+    }
+    else
+    {
+        <p><em>Replaying...</em></p>
+        <Chase />
+    }
 }
 
 @if (MapIsVisble)
@@ -184,7 +192,17 @@
     [CascadingParameter]
     public DialogFactory Dialogs { get; set; }
 
-    bool HideLoading { get; set; } = true;
+    bool HideLoading
+    {
+        get
+        {
+            return ReadD2cMessages.GPSCls.HideLoading;
+        }
+        set
+        {
+            ReadD2cMessages.GPSCls.HideLoading = value;
+        }
+    }
 
     public void ShowAlert(string msg)
     {
@@ -255,6 +273,12 @@
         {
             if (appInfo.appState == ReadD2cMessages.AppState.none)
             {
+                if(appInfo.appMode== ReadD2cMessages.AppMode.from)
+                {
+                    endTime = DateTime.Now;
+                }
+                HideLoading = false;
+                StateHasChanged();
                 await ReadD2cMessages.GPSCls.StartMonitor(SetCoords);
             }
         }
@@ -262,6 +286,7 @@
         { 
             if ((appInfo.appState == ReadD2cMessages.AppState.running) || (appInfo.appState == ReadD2cMessages.AppState.loading))
             {
+                HideLoading = true;
                 StateHasChanged();
                 ReadD2cMessages.GPSCls.StopMonitor();
                 StateHasChanged();
@@ -286,8 +311,8 @@
     List<AppModeModel> AppModeOptions { get; set; } = new List<AppModeModel>
     {
         new AppModeModel { GenderId = 1, Description = "Live" },
-        new AppModeModel { GenderId = 2, Description = "Previous From to Live" },
-        new AppModeModel { GenderId = 3, Description = "Previous From - To" },
+        new AppModeModel { GenderId = 2, Description = "History From to Now" },
+        new AppModeModel { GenderId = 3, Description = "History From - To" },
     };
 
     public class AppModeModel
@@ -535,9 +560,9 @@
                 System.Diagnostics.Debug.WriteLine(appInfo.dataState);
                 System.Diagnostics.Debug.WriteLine(appInfo.appState);
             }
-            if (ReadD2cMessages.GPSCls.appInfo.StartTime.Ticks <= TimeStamp.Ticks)
+            if (ReadD2cMessages.GPSCls.appInfo.appMode == ReadD2cMessages.AppMode.live)
             {
-                if (ReadD2cMessages.GPSCls.appInfo.appMode == ReadD2cMessages.AppMode.live)
+                if (ReadD2cMessages.GPSCls.appInfo.StartTime.Ticks <= TimeStamp.ToLocalTime().Ticks)
                 {
                     HideLoading = true; 
                 }
@@ -546,11 +571,21 @@
                     HideLoading = false;
                 }
             }
+            else if (ReadD2cMessages.GPSCls.appInfo.appState == ReadD2cMessages.AppState.running)
+            {
+                HideLoading = true;
+            }
+            else 
+            {
+                HideLoading = false;
+            }
         }
         else
         {
             // lat + lon +alt = 0 is signal that the recv dc msgs wasst opped.
             // Need to refresh
+            HideLoading = true;
+            //ReadD2cMessages.GPSCls.appInfo.appMode = ReadD2cMessage.AppMode.;
         }
         StateHasChanged();
         return 0;

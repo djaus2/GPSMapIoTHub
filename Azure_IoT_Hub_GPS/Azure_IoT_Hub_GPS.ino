@@ -897,8 +897,8 @@ void GetGPS()
         Serial.print(qual);
         Serial.print("(>0) sats=");
         Serial.print(ns);
-        Serial.print("(min 3)");
-        Serial.print("\t\t\t\t");
+        Serial.println("(min 3)");
+        Serial.print("\t");
         Serial.println(nmea);
       }
       else if (BluetoothConnected)

@@ -1,16 +1,16 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // SPDX-License-Identifier: MIT
 
-#define IOT_CONFIG_WIFI_SSID "APQLZM"
-#define IOT_CONFIG_WIFI_PASSWORD "silly1371"
+#define IOT_CONFIG_WIFI_SSID ""
+#define IOT_CONFIG_WIFI_PASSWORD ""
 
-#define IOT_CONFIG_WIFI_SSID_MOBILE "Desparate"
-#define IOT_CONFIG_WIFI_PASSWORD_MOBILE "silly1371"
+#define IOT_CONFIG_WIFI_SSID_MOBILE ""
+#define IOT_CONFIG_WIFI_PASSWORD_MOBILE ""
 
 // Azure IoT
-#define IOT_CONFIG_IOTHUB_FQDN "AzIoTHubDj1.azure-devices.net"
-#define IOT_CONFIG_DEVICE_ID "AzTelemHubDevice1"
-#define IOT_CONFIG_DEVICE_KEY "oIciiPuh0w1pfnwcTPc6cjGh+bttT/buzNp6OJCIbxQ="
+#define IOT_CONFIG_IOTHUB_FQDN ""
+#define IOT_CONFIG_DEVICE_ID ""
+#define IOT_CONFIG_DEVICE_KEY ""
 
 
 // Publish 1 message every 2 seconds
