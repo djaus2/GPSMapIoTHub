@@ -7,7 +7,7 @@ Uses Telerik Map Component.
 
 ## Updates
 
-- branch has been merged back into Master
+- **WorkInProgress** branch has been merged back into Master
 - Can record and playback history
 - Just did a drive by locally and the recring worked fine. :)
 - Can jumper GP12/13 for selecting between two wifis and whether or not to use Serial.  Can also select Blutooth, GP11
