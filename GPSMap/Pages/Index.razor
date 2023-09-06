@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using BlazorPro.Spinkit
 
+
 <!--From: https://demos.telerik.com/blazor-ui/map/overview -->
 
 
@@ -162,6 +163,12 @@
 {
     <table>
     <tr>
+            <td><button @onclick="() => {ScrollHorizontal(100);}">&nbsp;&nbsp;&nbsp&lt;&nbsp;&nbsp;&nbsp</button></td>
+            <td><button @onclick="() => {ScrollHorizontal(-100);}">&nbsp;&nbsp;&nbsp;&gt;&nbsp;&nbsp;&nbsp;</button></td>
+            <td><button @onclick="() => {ScrollVertical(100);}">&nbsp;&nbsp;&nbsp;Up&nbsp;&nbsp;&nbsp</button></td>
+            <td><button @onclick="() => {ScrollVertical(-100);}">&nbsp;&nbsp;&nbsp;Down&nbsp;&nbsp;&nbsp;</button></td>
+    </tr>
+    <tr>
         <td><button @onclick="() => {zoom++;}">&nbsp;&nbsp;&nbsp+&nbsp;&nbsp;&nbsp</button></td>
         <td><button @onclick="() => {zoom--;}">&nbsp;&nbsp;&nbsp;--&nbsp;&nbsp;&nbsp;</button></td>
         <td colspan="2">
@@ -215,11 +222,26 @@
 
 
 @code {
-        [CascadingParameter]
-        public DialogFactory Dialogs { get; set; }
+    [CascadingParameter]
+    public DialogFactory Dialogs { get; set; }
 
     public bool autoCenterMap = true;
     public bool replayFast = false;
+
+    void ScrollHorizontal(int val)
+    {
+        if(val>0)
+            Center[1] +=0.001;
+        else
+            Center[1] -=0.001;
+    }
+    void ScrollVertical(int val)
+    {
+        if (val > 0)
+            Center[0] += 0.001;
+        else
+            Center[0] -= 0.001;
+    }
 
 
     bool HideLoading
@@ -581,10 +603,25 @@
         if(! (telem.lat + telem.lon + telem.alt == 0))
         {
             double[] coords = new double[] { telem.lat, telem.lon };
+            double[] prevCoords = MarkerDataGPSPoint[0].LatLng;
             TimeStamp = telem.TimeStamp;
-            if(autoCenterMap)
+            if (autoCenterMap)
                 Center = coords;
-            MarkerDataGPSPoint[0].LatLng = Center;
+            //else
+            //{
+            //    double dist = GetDistanceHaversign(prevCoords, coords);
+            //    System.Diagnostics.Debug.WriteLine($"Distance: {dist}");
+            //    if (dist > ReadD2cMessages.GPSCls.MaxDistMinor)
+            //        Center = coords;
+            //    else
+            //    {
+            //        double dist2 = GetDistanceHaversign(Center, coords);
+            //        System.Diagnostics.Debug.WriteLine($"Distance: {dist}");
+            //        if (dist > ReadD2cMessages.GPSCls.MaxDistMajor)
+            //            Center = coords;
+            //    }
+            //}
+            MarkerDataGPSPoint[0].LatLng = coords;
             MarkerDataGPSPoint[0].Address = $"{MarkerDataGPSPoint[0].LatLng[0]},{MarkerDataGPSPoint[0].LatLng[1]}";
             //if (appInfo != null)
             //{
@@ -622,6 +659,31 @@
         }
         StateHasChanged();
         return 0;
+    }
+
+    // https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
+    // And Code: https://diversedaily.com/the-haversine-formula/
+    double GetDistanceHaversign(double[] previous, double[] current)
+    {
+        double R = 6371;
+        double lat1 = ConvertToRadians(previous[0]);
+        double lat2 = ConvertToRadians(current[0]);
+        double lon1 = ConvertToRadians(previous[1]);
+        double lon2 = ConvertToRadians(current[1]);
+
+        double dLat = ConvertToRadians(lat2 - lat1);
+        double dLon = ConvertToRadians(lon2 - lon1);
+        double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                   Math.Cos(ConvertToRadians(lat1)) * Math.Cos(ConvertToRadians(lat2)) *
+                   Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        double c = 2 * Math.Asin(Math.Sqrt(a));
+        double distance = R * c*1000;
+        return distance;
+    }
+
+    private double ConvertToRadians(double angle)
+    {
+        return (Math.PI / 180) * angle;
     }
 }
 

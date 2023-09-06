@@ -141,6 +141,8 @@ namespace ReadD2cMessages
         static Func<Telemetry, int>? MyMethodName = null;
         static double lat = 0;
         static double lon = 45;
+        public static double MaxDistMinor { get; set; } = 200;
+        public static double MaxDistMajor { get; set; } = 2000;
         static DateTime StartUniversal = DateTime.Now.ToUniversalTime();
         static DateTime EndUniversal = DateTime.Now.ToUniversalTime();
 
@@ -246,6 +248,8 @@ namespace ReadD2cMessages
         {
             string EventHubConnectionString = config.GetValue<string>("EventHubConnectionString");
             string HubName = config.GetValue<string>("HubName");
+            MaxDistMinor = config.GetValue<double>("MaxDistMinor");
+            MaxDistMajor = config.GetValue<double>("MaxDistMajor");
 
             // Create the consumer using the default consumer group using a direct connection to the service.
             // Information on using the client with a proxy can be found in the README for this quick start, here:
