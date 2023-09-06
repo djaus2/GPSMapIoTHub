@@ -7,6 +7,7 @@ Uses Telerik Map Component.
 
 ## Updates
 
+- Working on **scrolling** map < > Up and Down
 - **6X Replay** option _( Default telemetry period is 1 / 10 sec, so 6x is 1 min of telemetry / 10s )_
 - **WorkInProgress** branch has been merged back into Master
 - Much improved **NMEA GPGGA** sentence filter.
