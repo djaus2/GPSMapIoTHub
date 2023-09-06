@@ -34,7 +34,7 @@
 <table>
     <tr>
         <td align="right"><b><i>Lattitude:</i></b></td>
-        <td>@Center[0]</td>
+        <td>@Center[0]&nbsp;&nbsp;&nbsp;</td>
         <td align ="right"><b><i>Longitude:</i></b></td>
         <td>@Center[1]</td>
     </tr>
@@ -42,39 +42,54 @@
         <td align ="right"><b><i>Date:</i></b></td>
         <td>@TimeStamp.ToLocalTime().ToShortDateString()</td>
         <td align ="right"><b><i>Time:</i></b></td>
-        <td>@TimeStamp.ToLocalTime().ToShortTimeString()</td>
+        <td>@TimeStamp.ToLocalTime().ToLongTimeString()</td>
     </tr>
     <tr>
         <td><button @onclick=@SendCommand>Send CD Msg</button></td>
         <td colspan="3"><TelerikTextBox @bind-Value="@Command" Placeholder="Start,Stop,Reset,Set-Period" /></td>
     </tr>
-    <tr>
+    @if(appInfo.appMode != ReadD2cMessages.AppMode.none)
+    {
+        <tr>
         @if ( (appInfo.appState != ReadD2cMessages.AppState.running) && (appInfo.appState != ReadD2cMessages.AppState.loading))
         {
             @if (appInfo.appState != ReadD2cMessages.AppState.playing)
             {
-                <td><button @onclick="async () => { await Runn(true);}">START</button>&nbsp;Get&nbsp;D2C&nbsp;Telemetry</td>
+                <td align="right"><button @onclick="async () => { await Runn(true);}">START</button>&nbsp;Get&nbsp;D2C&nbsp;Telemetry&nbsp;</td>
             }
             @if (appInfo.dataState == ReadD2cMessages.DataState.loaded)
             {
                 @if (appInfo.appState != ReadD2cMessages.AppState.playing)
                 {
                     <td><button @onclick="async () => { await Playy(true);}">REPLAY</button></td>
+                    <td colspan="2">
+                        &nbsp;
+                            <TelerikCheckBox @bind-Value="@replayFast"
+                                             Id="IdReplayFast)">
+                            </TelerikCheckBox>
+                            <label for="IdReplayFast)">
+                                Replay 6X
+                            </label>
+                    </td>
                 }
                 else
                 {
-                    <td><button @onclick="async () => { await Playy(false);}">STOP</button>&nbsp;Replay</td>
+                    <td align="right"><button @onclick="async () => { await Playy(false);}">STOP</button></td><td colspan="2">&nbsp;Replay</td>
                 }   
             }
         }
         else
         {
-            <td><button @onclick="async () => {await Runn(false);}">STOP</button>&nbsp;Get&nbsp;D2C&nbsp;Telemetry</td>
+            <td align="right"><button @onclick="async () => {await Runn(false);}">STOP</button></td><td colspan="2">&nbsp;Get&nbsp;D2C&nbsp;Telemetry</td>
         }
-    </tr>
+        </tr>
+    }
+    else
+    {
+        <tr><td colspan="4">&nbsp;</td></tr>
+    }
     <tr>
-        <td align="right"><b><i>AppMode:</i></b></td>
-        <td colspan="3"> @(IappMode== 0 ? "No selection yet" : AppModeOptions[IappMode - 1].Description)</td>
+        <td colspan="4"> <b><i>AppMode:</i></b>&nbsp;@(IappMode== 0 ? "No selection yet" : AppModeOptions[IappMode - 1].Description)</td>
     </tr>
     @if (appInfo.appState == ReadD2cMessages.AppState.none)
     {
@@ -145,10 +160,21 @@
 
 @if (MapIsVisble)
 {
+    <table>
     <tr>
         <td><button @onclick="() => {zoom++;}">&nbsp;&nbsp;&nbsp+&nbsp;&nbsp;&nbsp</button></td>
         <td><button @onclick="() => {zoom--;}">&nbsp;&nbsp;&nbsp;--&nbsp;&nbsp;&nbsp;</button></td>
+        <td colspan="2">
+            &nbsp;
+            <TelerikCheckBox @bind-Value="@autoCenterMap"
+                             Id="IdAutoCenter)">
+            </TelerikCheckBox>
+            <label for="IdAutoCenter)">
+                Auto Center Map
+            </label>
+        </td>
     </tr>
+    </table>
 <TelerikMap Center="@Center"
             MinZoom="3"
             OnClick="@OnMapZoom"
@@ -189,8 +215,12 @@
 
 
 @code {
-    [CascadingParameter]
-    public DialogFactory Dialogs { get; set; }
+        [CascadingParameter]
+        public DialogFactory Dialogs { get; set; }
+
+    public bool autoCenterMap = true;
+    public bool replayFast = false;
+
 
     bool HideLoading
     {
@@ -208,7 +238,7 @@
     {
         Dialogs.AlertAsync(msg).GetAwaiter();
 
-        System.Diagnostics.Debug.WriteLine(msg);
+        //System.Diagnostics.Debug.WriteLine(msg);
     }
     DateTime startTime
     {
@@ -252,14 +282,14 @@
         {
             if (appInfo.appState == ReadD2cMessages.AppState.none)
             {
-                await ReadD2cMessages.GPSCls.Playy(true);
+                await ReadD2cMessages.GPSCls.Playy(true, replayFast);
             }
         }
         else
         {
             if (appInfo.appState == ReadD2cMessages.AppState.playing)
             {
-                await ReadD2cMessages.GPSCls.Playy(false);
+                await ReadD2cMessages.GPSCls.Playy(false, replayFast);
             }
         }
     }
@@ -277,6 +307,7 @@
                 {
                     endTime = DateTime.Now;
                 }
+                ReadD2cMessages.GPSCls.ClearRecordedTelemetry();
                 HideLoading = false;
                 StateHasChanged();
                 await ReadD2cMessages.GPSCls.StartMonitor(SetCoords);
@@ -325,7 +356,7 @@
     {
         IappMode = newValue;
         appInfo.appMode = (ReadD2cMessages.AppMode)newValue;
-        System.Diagnostics.Debug.WriteLine($"New App Mode: {appInfo.appMode}");
+        //System.Diagnostics.Debug.WriteLine($"New App Mode: {appInfo.appMode}");
         StateHasChanged();
     }
 
@@ -358,9 +389,9 @@
     {
         if (first)
         {
+            ReadD2cMessages.GPSCls.ClearRecordedTelemetry();
             GPSMap.Data.SendCloud2DeviceMsgs.Setup();
-
-
+            await Delay(100);
         }
 
     }
@@ -551,15 +582,16 @@
         {
             double[] coords = new double[] { telem.lat, telem.lon };
             TimeStamp = telem.TimeStamp;
-            Center = coords;
+            if(autoCenterMap)
+                Center = coords;
             MarkerDataGPSPoint[0].LatLng = Center;
             MarkerDataGPSPoint[0].Address = $"{MarkerDataGPSPoint[0].LatLng[0]},{MarkerDataGPSPoint[0].LatLng[1]}";
-            if (appInfo != null)
-            {
-                System.Diagnostics.Debug.WriteLine(appInfo.appMode);
-                System.Diagnostics.Debug.WriteLine(appInfo.dataState);
-                System.Diagnostics.Debug.WriteLine(appInfo.appState);
-            }
+            //if (appInfo != null)
+            //{
+            //    System.Diagnostics.Debug.WriteLine(appInfo.appMode);
+            //    System.Diagnostics.Debug.WriteLine(appInfo.dataState);
+            //    System.Diagnostics.Debug.WriteLine(appInfo.appState);
+            //}
             if (ReadD2cMessages.GPSCls.appInfo.appMode == ReadD2cMessages.AppMode.live)
             {
                 if (ReadD2cMessages.GPSCls.appInfo.StartTime.Ticks <= TimeStamp.ToLocalTime().Ticks)
@@ -584,6 +616,7 @@
         {
             // lat + lon +alt = 0 is signal that the recv dc msgs wasst opped.
             // Need to refresh
+            ReadD2cMessages.GPSCls.appInfo.appState = ReadD2cMessages.AppState.none;
             HideLoading = true;
             //ReadD2cMessages.GPSCls.appInfo.appMode = ReadD2cMessage.AppMode.;
         }

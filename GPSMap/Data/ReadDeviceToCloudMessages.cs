@@ -18,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using System.Runtime.CompilerServices;
 using Microsoft.Azure.Amqp.Framing;
 using Azure.Core;
+using Telerik.SvgIcons;
 //using CommandLine;
 
 namespace ReadD2cMessages
@@ -153,7 +154,12 @@ namespace ReadD2cMessages
             await Task.Delay(del);
         }
 
-        public static async Task Playy(bool playMode)
+        public static void ClearRecordedTelemetry()
+        {
+            telemetrys = new List<Telemetry>();
+        }
+
+        public static async Task Playy(bool playMode ,bool replayFast)
         {
             if (appInfo.dataState == DataState.loaded)
             {
@@ -172,8 +178,13 @@ namespace ReadD2cMessages
                             {
                                 TimeSpan span = telemetrys[i + 1].TimeStamp.Subtract(
                                     telemetrys[i].TimeStamp);
-
-                                await Delay(span.Milliseconds);
+                                //System.Diagnostics.Debug.WriteLine($"{i} {telemetrys[i + 1].TimeStamp} {telemetrys[i].TimeStamp} {span} {span.TotalMilliseconds}");
+                                int period = (int)span.TotalMilliseconds;
+                                if (replayFast)
+                                {
+                                    period = period / 6;
+                                }
+                                await Delay(period);
                             }
                         }
                         appInfo.Set(AppState.none);
@@ -200,8 +211,9 @@ namespace ReadD2cMessages
         {
             cts.Cancel();
         }
+
         public static async Task StartMonitor(Func< Telemetry, int> myMethodName)
-        {
+        {;
             appInfo.Set(DataState.none, AppState.loading);
             telemetrys = new List<Telemetry>();
             MyMethodName = myMethodName;
@@ -277,69 +289,71 @@ namespace ReadD2cMessages
            
                     DateTime xx = (DateTime)partitionEvent.Data.SystemProperties["iothub-enqueuedtime"];
                     System.Diagnostics.Debug.WriteLine("{0} {1} {2}",StartUniversal,xx, EndUniversal);
-                    if (xx.Ticks < StartUniversal.Ticks)
-                        continue;
-                    appInfo.Set(DataState.loaded);
-                    if (appInfo.appMode == AppMode.fromto)
+                    if (xx.Ticks >= StartUniversal.Ticks)
                     {
-                        if ((xx.Ticks >= EndUniversal.Ticks))
+                        appInfo.Set(DataState.loaded);
+                        if (appInfo.appMode == AppMode.fromto)
                         {
-                            StopMonitor();
+                            if ((xx.Ticks >= EndUniversal.Ticks))
+                            {
+                                StopMonitor();
+                            }
                         }
-                    }
-                    else if (appInfo.appMode == AppMode.from)
-                    {
-                        if ((xx.Ticks >= EndUniversal.Ticks))
+                        else if (appInfo.appMode == AppMode.from)
                         {
-                            StopMonitor();
+                            if ((xx.Ticks >= EndUniversal.Ticks))
+                            {
+                                StopMonitor();
+                            }
                         }
-                    }
-                    System.Diagnostics.Debug.WriteLine($"\nMessage received on partition {partitionEvent.Partition.PartitionId}:");
-                    System.Diagnostics.Debug.WriteLine($"\tMessage body: {data}");
-                    
-                    if ((MyMethodName != null) &&(!string.IsNullOrEmpty(data)))
-                    {
-                        Geolocation? _location;
-                        if (data.Contains("Error"))
-                            continue;
-                        try
-                        {
-                            _location = JsonConvert.DeserializeObject<Geolocation>(data);
-                        } catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine("Skip");
-                            continue;
-                        }
+                        System.Diagnostics.Debug.WriteLine($"\nMessage received on partition {partitionEvent.Partition.PartitionId}:");
+                        System.Diagnostics.Debug.WriteLine($"\tMessage body: {data}");
 
-                        if (_location != null)
+                        if ((MyMethodName != null) && (!string.IsNullOrEmpty(data)))
                         {
-                            Geolocation location = (Geolocation)_location;
+                            Geolocation? _location;
+                            if (data.Contains("Error"))
+                                continue;
+                            try
+                            {
+                                _location = JsonConvert.DeserializeObject<Geolocation>(data);
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine("Skip");
+                                continue;
+                            }
 
-                            double lat = location.lat;
-                            double lon = location.lon;
-                            double alt = location.alt;
+                            if (_location != null)
+                            {
+                                Geolocation location = (Geolocation)_location;
 
-                            Telemetry telem = new Telemetry(location, xx);
-                            telemetrys.Add(telem);
-  
-                            double[] dbl = new double[] { lat, lon };
-                            int res = ((Func<Telemetry, int>)MyMethodName)(telem);
-                        }
-                        ct.ThrowIfCancellationRequested();
-                    }
+                                double lat = location.lat;
+                                double lon = location.lon;
+                                double alt = location.alt;
 
-                    if (showProperties)
-                    {
-                        System.Diagnostics.Debug.WriteLine("\tApplication properties (set by device):");
-                        foreach (KeyValuePair<string, object> prop in partitionEvent.Data.Properties)
-                        {
-                            PrintProperties(prop);
+                                Telemetry telem = new Telemetry(location, xx);
+                                telemetrys.Add(telem);
+
+                                double[] dbl = new double[] { lat, lon };
+                                int res = ((Func<Telemetry, int>)MyMethodName)(telem);
+                            }
+                            ct.ThrowIfCancellationRequested();
                         }
 
-                        System.Diagnostics.Debug.WriteLine("\tSystem properties (set by IoT hub):");
-                        foreach (KeyValuePair<string, object> prop in partitionEvent.Data.SystemProperties)
+                        if (showProperties)
                         {
-                            PrintProperties(prop);
+                            System.Diagnostics.Debug.WriteLine("\tApplication properties (set by device):");
+                            foreach (KeyValuePair<string, object> prop in partitionEvent.Data.Properties)
+                            {
+                                PrintProperties(prop);
+                            }
+
+                            System.Diagnostics.Debug.WriteLine("\tSystem properties (set by IoT hub):");
+                            foreach (KeyValuePair<string, object> prop in partitionEvent.Data.SystemProperties)
+                            {
+                                PrintProperties(prop);
+                            }
                         }
                     }
                 }
@@ -352,6 +366,7 @@ namespace ReadD2cMessages
                 appInfo.Set(AppState.none);
                 if(appInfo.appMode != AppMode.live)
                     appInfo.Set(DataState.loaded);
+                appInfo.appState = AppState.none;
                 HideLoading = false;
                 Telemetry telem = new Telemetry { lat=0,lon=0, alt=0 };
                 int res = ((Func<Telemetry, int>)MyMethodName)(telem);
