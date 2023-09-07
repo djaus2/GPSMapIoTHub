@@ -7,12 +7,11 @@ Uses Telerik Map Component.
 
 ## Updates
 
-- Working on **scrolling** map < > Up and Down
+- **Scrolling** map < > Up and Down works, Recentres if location is more than 200m off centre.
 - **6X Replay** option _( Default telemetry period is 1 / 10 sec, so 6x is 1 min of telemetry / 10s )_
 - **WorkInProgress** branch has been merged back into Master
 - Much improved **NMEA GPGGA** sentence filter.
 - Can record and playback history
-- Test: Did a drive by locally and the GPS Mapping worked fine. :)
 - Can jumper GP12/13 for selecting between two wifis and whether or not to use Serial.  Can also select Blutooth, GP11
   - GP13 _High = _Deskyop WiFi , alt Mobile Wifi_
       - Have dev WiFi and my phone wifi for when mobile
