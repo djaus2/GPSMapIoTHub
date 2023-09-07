@@ -607,20 +607,13 @@
             TimeStamp = telem.TimeStamp;
             if (autoCenterMap)
                 Center = coords;
-            //else
-            //{
-            //    double dist = GetDistanceHaversign(prevCoords, coords);
-            //    System.Diagnostics.Debug.WriteLine($"Distance: {dist}");
-            //    if (dist > ReadD2cMessages.GPSCls.MaxDistMinor)
-            //        Center = coords;
-            //    else
-            //    {
-            //        double dist2 = GetDistanceHaversign(Center, coords);
-            //        System.Diagnostics.Debug.WriteLine($"Distance: {dist}");
-            //        if (dist > ReadD2cMessages.GPSCls.MaxDistMajor)
-            //            Center = coords;
-            //    }
-            //}
+            else
+            {
+                double dist = GetDistanceHaversign(Center, coords);
+                System.Diagnostics.Debug.WriteLine($"Distance: {dist}");
+                if (dist > ReadD2cMessages.GPSCls.MaxDistfromCentre)
+                    Center = coords;
+            }
             MarkerDataGPSPoint[0].LatLng = coords;
             MarkerDataGPSPoint[0].Address = $"{MarkerDataGPSPoint[0].LatLng[0]},{MarkerDataGPSPoint[0].LatLng[1]}";
             //if (appInfo != null)
@@ -677,7 +670,7 @@
                    Math.Cos(ConvertToRadians(lat1)) * Math.Cos(ConvertToRadians(lat2)) *
                    Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
         double c = 2 * Math.Asin(Math.Sqrt(a));
-        double distance = R * c*1000;
+        double distance = R * c*10000;
         return distance;
     }
 
