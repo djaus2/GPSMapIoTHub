@@ -100,7 +100,7 @@ If you have [Azure Cli installed](https://learn.microsoft.com/en-us/cli/azure/in
 ## Footnote
 
 If running the Blazor app in development mode, the appp can be opened in a phone browser locally using **ngrok** as 
-per the blog post: 
+per the blog post:  
 [Blazor Server Development: Viewing in a phone](https://davidjones.sportronics.com.au/web/Blazor-Viewing_in_a_phone-web.html).
   
 
